@@ -134,7 +134,10 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
   const [editInfoType, setEditInfoType] = useState<'allergies' | 'diseases' | 'medications'>('allergies')
   const [editInfoInput, setEditInfoInput] = useState('')
   const [products, setProducts] = useState<{ _id: string; name: string; brand: string }[]>([])
+  const [productSearchQuery, setProductSearchQuery] = useState('')
   const [selectedProductId, setSelectedProductId] = useState('')
+  const [productHighlightedIndex, setProductHighlightedIndex] = useState(-1)
+  const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productQuantity, setProductQuantity] = useState(1)
   const [pendingProducts, setPendingProducts] = useState<{ productId: string; productName: string; quantity: number }[]>([])
   const [expandedProductsHistory, setExpandedProductsHistory] = useState(false)
@@ -475,6 +478,21 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
     setShowEditPatientModal(true)
   }
 
+  const filteredProducts = products.filter(p =>
+    !productSearchQuery || p.name.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+    (p.brand && p.brand.toLowerCase().includes(productSearchQuery.toLowerCase()))
+  )
+
+  const selectProduct = (productId: string) => {
+    setSelectedProductId(productId)
+    const product = products.find(p => p._id === productId)
+    if (product) {
+      setProductSearchQuery(`${product.name}${product.brand ? ` - ${product.brand}` : ''}`)
+    }
+    setShowProductDropdown(false)
+    setProductHighlightedIndex(-1)
+  }
+
   const addProductToPending = () => {
     if (!selectedProductId) return
     const product = products.find(p => p._id === selectedProductId)
@@ -485,7 +503,30 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
       quantity: productQuantity,
     }])
     setSelectedProductId('')
+    setProductSearchQuery('')
     setProductQuantity(1)
+    setShowProductDropdown(false)
+    setProductHighlightedIndex(-1)
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setProductHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setProductHighlightedIndex(prev => Math.max(prev - 1, -1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (productHighlightedIndex >= 0 && filteredProducts[productHighlightedIndex]) {
+        selectProduct(filteredProducts[productHighlightedIndex]._id)
+      } else if (filteredProducts.length === 1) {
+        selectProduct(filteredProducts[0]._id)
+      }
+    } else if (e.key === 'Escape') {
+      setShowProductDropdown(false)
+      setProductHighlightedIndex(-1)
+    }
   }
 
   const removePendingProduct = (index: number) => {
@@ -1181,23 +1222,45 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
               {expandedProductsHistory && (
                 <div className="mt-4 space-y-4">
                   <div className="flex gap-2">
-                    <select
-                      value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
-                    >
-                      <option value="">Seleccionar producto...</option>
-                      {products.map((p) => (
-                        <option key={p._id} value={p._id}>
-                          {p.name} {p.brand ? `- ${p.brand}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={productSearchQuery}
+                        onChange={(e) => {
+                          setProductSearchQuery(e.target.value)
+                          setSelectedProductId('')
+                          setShowProductDropdown(true)
+                          setProductHighlightedIndex(-1)
+                        }}
+                        onFocus={() => setShowProductDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
+                        onKeyDown={handleSearchKeyDown}
+                        placeholder="Escriba para buscar producto..."
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                      />
+                      {showProductDropdown && filteredProducts.length > 0 && (
+                        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                          {filteredProducts.map((p, i) => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onMouseDown={() => selectProduct(p._id)}
+                              className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                                i === productHighlightedIndex ? 'bg-emerald-50' : ''
+                              } ${p._id === selectedProductId ? 'bg-emerald-100 font-medium' : ''}`}
+                            >
+                              <span className="text-gray-900">{p.name}</span>
+                              {p.brand && <span className="text-xs text-gray-400">{p.brand}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <input
                       type="number"
                       min={1}
                       value={productQuantity}
-                      onChange={(e) => setProductQuantity(Number(e.target.value))}
+                      onChange={(e) => setProductQuantity(Math.max(1, Number(e.target.value)))}
                       className="w-20 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
                       placeholder="Cant."
                     />
