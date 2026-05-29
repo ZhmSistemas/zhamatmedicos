@@ -7,7 +7,7 @@ import { z } from 'zod'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts'
-import { Search, User, Activity, Heart, Droplets, AlertCircle, Pill, Scale, Calendar, Phone, Plus, X, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react'
+import { Search, User, Activity, Heart, Droplets, AlertCircle, Pill, Scale, Calendar, Phone, Plus, X, ChevronDown, ChevronUp, TrendingUp, Trash2 } from 'lucide-react'
 
 const searchSchema = z.object({
   cedula: z.string().min(1, 'Ingrese la cédula del paciente'),
@@ -107,6 +107,8 @@ interface Patient {
   bloodPressureHistory: BloodPressureRecord[]
   bloodSugarHistory: BloodSugarRecord[]
   weightHistory: WeightRecord[]
+  consumedProducts: Array<{ productId: string; productName: string; quantity: number; recordedAt: string }>
+  consumedProductsHistory: Array<{ _id: string; productId: string; productName: string; quantity: number; recordedAt: string }>
   createdAt: string
   updatedAt: string
 }
@@ -131,6 +133,11 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
   const [showEditInfoModal, setShowEditInfoModal] = useState(false)
   const [editInfoType, setEditInfoType] = useState<'allergies' | 'diseases' | 'medications'>('allergies')
   const [editInfoInput, setEditInfoInput] = useState('')
+  const [products, setProducts] = useState<{ _id: string; name: string; brand: string }[]>([])
+  const [selectedProductId, setSelectedProductId] = useState('')
+  const [productQuantity, setProductQuantity] = useState(1)
+  const [pendingProducts, setPendingProducts] = useState<{ productId: string; productName: string; quantity: number }[]>([])
+  const [expandedProductsHistory, setExpandedProductsHistory] = useState(false)
   const [showEditPatientModal, setShowEditPatientModal] = useState(false)
   const [editPatientData, setEditPatientData] = useState({
     name: '',
@@ -239,6 +246,22 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
       searchPatient({ cedula: initialCedula })
     }
   }, [initialCedula, searchPatient])
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/productos')
+      const data = await res.json()
+      if (res.ok) {
+        setProducts(data.products)
+      }
+    } catch {
+      console.error('Error al cargar productos')
+    }
+  }
 
   const addMeasurement = async (data: MeasurementInputs) => {
     if (!patient) return
@@ -450,6 +473,57 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
       cedula: patient.cedula,
     })
     setShowEditPatientModal(true)
+  }
+
+  const addProductToPending = () => {
+    if (!selectedProductId) return
+    const product = products.find(p => p._id === selectedProductId)
+    if (!product) return
+    setPendingProducts(prev => [...prev, {
+      productId: product._id,
+      productName: product.name,
+      quantity: productQuantity,
+    }])
+    setSelectedProductId('')
+    setProductQuantity(1)
+  }
+
+  const removePendingProduct = (index: number) => {
+    setPendingProducts(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const saveConsumedProducts = async () => {
+    if (!patient || pendingProducts.length === 0) return
+    setIsAdding(true)
+    setError(null)
+    try {
+      const now = new Date().toISOString()
+      const productsToSave = pendingProducts.map(p => ({
+        ...p,
+        recordedAt: now,
+      }))
+      const response = await fetch(`/api/patients/${patient.cedula}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consumedProducts: productsToSave }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al guardar productos')
+      }
+      setPatient(result.patient)
+      setPendingProducts([])
+      setAddSuccess(true)
+      setTimeout(() => setAddSuccess(false), 3000)
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Ocurrió un error inesperado')
+      }
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   const handleEditPatient = async () => {
@@ -1085,6 +1159,120 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                   <p className="text-center text-gray-400">Sin medicamentos registrados</p>
                 )}
               </div>
+            </div>
+
+            <div className="rounded-xl bg-white p-6 shadow-lg">
+              <button
+                onClick={() => setExpandedProductsHistory(!expandedProductsHistory)}
+                className="flex w-full items-center justify-between"
+              >
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                  <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Productos Consumidos
+                </div>
+                {expandedProductsHistory ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
+              {expandedProductsHistory && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedProductId}
+                      onChange={(e) => setSelectedProductId(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                    >
+                      <option value="">Seleccionar producto...</option>
+                      {products.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name} {p.brand ? `- ${p.brand}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={1}
+                      value={productQuantity}
+                      onChange={(e) => setProductQuantity(Number(e.target.value))}
+                      className="w-20 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                      placeholder="Cant."
+                    />
+                    <button
+                      type="button"
+                      onClick={addProductToPending}
+                      disabled={!selectedProductId}
+                      className="rounded-md bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {pendingProducts.length > 0 && (
+                    <div className="overflow-hidden rounded-lg border border-gray-200">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Producto</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Cantidad</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {pendingProducts.map((pp, i) => (
+                            <tr key={i}>
+                              <td className="px-4 py-2 text-sm text-gray-900">{pp.productName}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{pp.quantity}</td>
+                              <td className="px-4 py-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => removePendingProduct(i)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      {(patient.consumedProductsHistory?.length || 0) + pendingProducts.length} registro{(patient.consumedProductsHistory?.length || 0) + pendingProducts.length !== 1 ? 's' : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={saveConsumedProducts}
+                      disabled={isAdding || pendingProducts.length === 0}
+                      className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-70"
+                    >
+                      {isAdding ? 'Guardando...' : 'Guardar Productos'}
+                    </button>
+                  </div>
+
+                  {patient.consumedProductsHistory && patient.consumedProductsHistory.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-700">Historial de productos:</p>
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {patient.consumedProductsHistory.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()).map((record) => (
+                          <div key={record._id} className="flex items-center justify-between rounded bg-gray-50 px-3 py-2 text-sm">
+                            <span className="font-medium text-gray-900">{record.productName}</span>
+                            <span className="text-gray-500">
+                              Cant: {record.quantity} — {formatDateTime(record.recordedAt)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {patient.observations && (

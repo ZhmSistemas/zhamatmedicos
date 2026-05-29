@@ -30,6 +30,12 @@ const addMeasurementSchema = z.object({
   birthDate: z.string().optional(),
   weight: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
+  consumedProducts: z.array(z.object({
+    productId: z.string(),
+    productName: z.string(),
+    quantity: z.number().default(1),
+    recordedAt: z.string().optional(),
+  })).optional(),
 })
 
 export const GET = async (
@@ -55,6 +61,8 @@ export const GET = async (
     patientObj.bloodPressureHistory = patientObj.bloodPressureHistory || []
     patientObj.bloodSugarHistory = patientObj.bloodSugarHistory || []
     patientObj.weightHistory = patientObj.weightHistory || []
+    patientObj.consumedProducts = patientObj.consumedProducts || []
+    patientObj.consumedProductsHistory = patientObj.consumedProductsHistory || []
 
     return Response.json({ patient: patientObj }, { status: 200 })
   } catch (err: unknown) {
@@ -179,6 +187,26 @@ export const PUT = async (
         { $set: { medications: data.medications } },
         { new: true }
       )
+    } else if (data.consumedProducts) {
+      console.log('Adding consumed products:', data.consumedProducts)
+      const now = new Date().toISOString()
+      const productsWithDate = data.consumedProducts.map(p => ({
+        ...p,
+        recordedAt: p.recordedAt || now,
+      }))
+
+      updatedPatient = await PatientModel.findOneAndUpdate(
+        { cedula },
+        {
+          $push: {
+            consumedProductsHistory: { $each: productsWithDate },
+          },
+          $set: {
+            consumedProducts: productsWithDate,
+          }
+        },
+        { new: true }
+      )
     } else if (data.type === 'bloodPressure' && data.bloodPressure) {
       console.log('Adding blood pressure:', data.bloodPressure)
       updatedPatient = await PatientModel.findOneAndUpdate(
@@ -257,6 +285,8 @@ export const PUT = async (
       patientObj.bloodPressureHistory = patientObj.bloodPressureHistory || []
       patientObj.bloodSugarHistory = patientObj.bloodSugarHistory || []
       patientObj.weightHistory = patientObj.weightHistory || []
+      patientObj.consumedProducts = patientObj.consumedProducts || []
+      patientObj.consumedProductsHistory = patientObj.consumedProductsHistory || []
 
       return Response.json(
         { message: 'Medición agregada exitosamente', patient: patientObj },

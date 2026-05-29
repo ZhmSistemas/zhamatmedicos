@@ -61,6 +61,19 @@ export type Patient = {
     value: number | null
     recordedAt: string
   }>
+  consumedProducts: Array<{
+    productId: string
+    productName: string
+    quantity: number
+    recordedAt: string
+  }>
+  consumedProductsHistory: Array<{
+    _id: string
+    productId: string
+    productName: string
+    quantity: number
+    recordedAt: string
+  }>
 }
 
 const PatientSchema = new mongoose.Schema(
@@ -128,6 +141,24 @@ const PatientSchema = new mongoose.Schema(
     weightHistory: {
       type: [{
         value: { type: Number, default: null },
+        recordedAt: { type: String, default: '' },
+      }],
+      default: [],
+    },
+    consumedProducts: {
+      type: [{
+        productId: { type: String, required: true },
+        productName: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        recordedAt: { type: String, default: '' },
+      }],
+      default: [],
+    },
+    consumedProductsHistory: {
+      type: [{
+        productId: { type: String, required: true },
+        productName: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
         recordedAt: { type: String, default: '' },
       }],
       default: [],

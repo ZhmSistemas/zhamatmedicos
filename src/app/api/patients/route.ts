@@ -110,6 +110,8 @@ export const GET = async () => {
       obj.bloodPressureHistory = obj.bloodPressureHistory || []
       obj.bloodSugarHistory = obj.bloodSugarHistory || []
       obj.weightHistory = obj.weightHistory || []
+      obj.consumedProducts = obj.consumedProducts || []
+      obj.consumedProductsHistory = obj.consumedProductsHistory || []
       return obj
     })
     return Response.json({ patients: patientsWithDefaults }, { status: 200 })
