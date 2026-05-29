@@ -107,8 +107,8 @@ interface Patient {
   bloodPressureHistory: BloodPressureRecord[]
   bloodSugarHistory: BloodSugarRecord[]
   weightHistory: WeightRecord[]
-  consumedProducts: Array<{ productId: string; productName: string; quantity: number; recordedAt: string }>
-  consumedProductsHistory: Array<{ _id: string; productId: string; productName: string; quantity: number; recordedAt: string }>
+  consumedProducts: Array<{ productId: string; productName: string; quantity: number; pricecompra: number; recordedAt: string }>
+  consumedProductsHistory: Array<{ _id: string; productId: string; productName: string; quantity: number; pricecompra: number; recordedAt: string }>
   createdAt: string
   updatedAt: string
 }
@@ -133,13 +133,13 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
   const [showEditInfoModal, setShowEditInfoModal] = useState(false)
   const [editInfoType, setEditInfoType] = useState<'allergies' | 'diseases' | 'medications'>('allergies')
   const [editInfoInput, setEditInfoInput] = useState('')
-  const [products, setProducts] = useState<{ _id: string; name: string; brand: string }[]>([])
+  const [products, setProducts] = useState<{ _id: string; name: string; brand: string; pricecompra: number }[]>([])
   const [productSearchQuery, setProductSearchQuery] = useState('')
   const [selectedProductId, setSelectedProductId] = useState('')
   const [productHighlightedIndex, setProductHighlightedIndex] = useState(-1)
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productQuantity, setProductQuantity] = useState(1)
-  const [pendingProducts, setPendingProducts] = useState<{ productId: string; productName: string; quantity: number }[]>([])
+  const [pendingProducts, setPendingProducts] = useState<{ productId: string; productName: string; quantity: number; pricecompra: number }[]>([])
   const [expandedProductsHistory, setExpandedProductsHistory] = useState(false)
   const [showEditPatientModal, setShowEditPatientModal] = useState(false)
   const [editPatientData, setEditPatientData] = useState({
@@ -501,6 +501,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
       productId: product._id,
       productName: product.name,
       quantity: productQuantity,
+      pricecompra: product.pricecompra || 0,
     }])
     setSelectedProductId('')
     setProductSearchQuery('')
@@ -540,7 +541,10 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
     try {
       const now = new Date().toISOString()
       const productsToSave = pendingProducts.map(p => ({
-        ...p,
+        productId: p.productId,
+        productName: p.productName,
+        quantity: p.quantity,
+        pricecompra: p.pricecompra,
         recordedAt: now,
       }))
       const response = await fetch(`/api/patients/${patient.cedula}`, {
@@ -1280,7 +1284,9 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Producto</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Cantidad</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium uppercase text-gray-500">Cant.</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500">Precio</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500">Total</th>
                             <th className="px-4 py-2 text-right text-xs font-medium uppercase text-gray-500">Acción</th>
                           </tr>
                         </thead>
@@ -1288,7 +1294,9 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                           {pendingProducts.map((pp, i) => (
                             <tr key={i}>
                               <td className="px-4 py-2 text-sm text-gray-900">{pp.productName}</td>
-                              <td className="px-4 py-2 text-sm text-gray-900">{pp.quantity}</td>
+                              <td className="px-4 py-2 text-center text-sm text-gray-900">{pp.quantity}</td>
+                              <td className="px-4 py-2 text-right text-sm text-gray-900">${pp.pricecompra.toFixed(2)}</td>
+                              <td className="px-4 py-2 text-right text-sm font-semibold text-gray-900">${(pp.quantity * pp.pricecompra).toFixed(2)}</td>
                               <td className="px-4 py-2 text-right">
                                 <button
                                   type="button"
@@ -1301,6 +1309,15 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                             </tr>
                           ))}
                         </tbody>
+                        <tfoot className="bg-gray-50">
+                          <tr>
+                            <td colSpan={3} className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Total:</td>
+                            <td className="px-4 py-2 text-right text-sm font-bold text-emerald-700">
+                              ${pendingProducts.reduce((sum, pp) => sum + pp.quantity * pp.pricecompra, 0).toFixed(2)}
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
                       </table>
                     </div>
                   )}
@@ -1323,11 +1340,11 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                     <div>
                       <p className="mb-2 text-sm font-medium text-gray-700">Historial de productos:</p>
                       <div className="max-h-48 overflow-y-auto space-y-1">
-                        {patient.consumedProductsHistory.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()).map((record) => (
+                        {[...patient.consumedProductsHistory].sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()).map((record) => (
                           <div key={record._id} className="flex items-center justify-between rounded bg-gray-50 px-3 py-2 text-sm">
                             <span className="font-medium text-gray-900">{record.productName}</span>
                             <span className="text-gray-500">
-                              Cant: {record.quantity} — {formatDateTime(record.recordedAt)}
+                              Cant: {record.quantity} x ${record.pricecompra?.toFixed(2) || '0.00'} = <span className="font-semibold text-gray-700">${((record.quantity * (record.pricecompra || 0))).toFixed(2)}</span> — {formatDateTime(record.recordedAt)}
                             </span>
                           </div>
                         ))}

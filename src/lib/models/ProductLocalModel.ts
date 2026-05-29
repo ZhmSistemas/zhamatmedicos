@@ -7,6 +7,7 @@ export type Product = {
   dirigido: string
   uso: string
   image_url: string
+  pricecompra: number
   priceventa: number
   brand: string
 }
@@ -17,6 +18,7 @@ const ProductSchema = new mongoose.Schema({
   dirigido: String,
   uso: String,
   image_url: String,
+  pricecompra: Number,
   priceventa: Number,
   brand: String,
 }, { collection: 'products' })

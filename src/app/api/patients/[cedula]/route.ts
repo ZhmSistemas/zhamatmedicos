@@ -34,6 +34,7 @@ const addMeasurementSchema = z.object({
     productId: z.string(),
     productName: z.string(),
     quantity: z.number().default(1),
+    pricecompra: z.number().default(0),
     recordedAt: z.string().optional(),
   })).optional(),
 })
