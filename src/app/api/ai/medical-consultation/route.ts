@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
         value: patientData?.bloodSugar?.value ?? null,
         type: patientData?.bloodSugar?.type ?? '',
       },
+      consumedProducts: patientData?.consumedProducts ?? [],
+      consumedProductsHistory: patientData?.consumedProductsHistory ?? [],
     }
 
     // Construir el contexto médico con los datos del paciente
@@ -61,6 +63,8 @@ Datos del Paciente:
   * Hematocrito: ${patient.hemogram.hematocrit} %
   * Observaciones: ${patient.hemogram.observations}
 - Observaciones generales: ${patient.observations}
+- Productos consumidos recientemente: ${patient.consumedProducts?.length ? patient.consumedProducts.map((p: { productName: string; quantity: number; pricecompra: number }) => `${p.productName} (cant: ${p.quantity}, precio: $${p.pricecompra})`).join(', ') : 'Ninguno'}
+- Historial completo de productos consumidos: ${patient.consumedProductsHistory?.length ? patient.consumedProductsHistory.map((p: { productName: string; quantity: number; pricecompra: number; recordedAt: string }) => `${p.productName} x${p.quantity} - $${p.pricecompra} c/u (${new Date(p.recordedAt).toLocaleDateString()})`).join('; ') : 'Ninguno'}
     `
 
     // Obtener productos disponibles desde la base de datos local
