@@ -246,10 +246,16 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
             Alertas
           </button>
           <button
-            onClick={() => setInputValue('Recomiéndame productos naturales del catálogo según las condiciones de este paciente')}
+            onClick={() => setInputValue('Analiza los productos que este paciente ha consumido, su historial de compras y dime si hay algún patrón o recomendación basada en sus condiciones de salud')}
             className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 transition-colors"
           >
             Recomendar productos
+          </button>
+          <button
+            onClick={() => setInputValue('Muéstrame el historial de productos adquiridos por el paciente, total gastado y frecuencia de compra')}
+            className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
+          >
+            Productos adquiridos
           </button>
         </div>
       </div>
