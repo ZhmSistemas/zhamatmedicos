@@ -118,6 +118,9 @@ interface PatientHistoryProps {
   onBack?: () => void
 }
 
+const formatPrice = (value: number) =>
+  value.toLocaleString('es-DO', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
 export default function PatientHistory({ initialCedula, onBack }: PatientHistoryProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -1295,8 +1298,8 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                             <tr key={i}>
                               <td className="px-4 py-2 text-sm text-gray-900">{pp.productName}</td>
                               <td className="px-4 py-2 text-center text-sm text-gray-900">{pp.quantity}</td>
-                              <td className="px-4 py-2 text-right text-sm text-gray-900">${pp.pricecompra.toFixed(2)}</td>
-                              <td className="px-4 py-2 text-right text-sm font-semibold text-gray-900">${(pp.quantity * pp.pricecompra).toFixed(2)}</td>
+                              <td className="px-4 py-2 text-right text-sm text-gray-900">${formatPrice(pp.pricecompra)}</td>
+                              <td className="px-4 py-2 text-right text-sm font-semibold text-gray-900">${formatPrice(pp.quantity * pp.pricecompra)}</td>
                               <td className="px-4 py-2 text-right">
                                 <button
                                   type="button"
@@ -1313,7 +1316,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                           <tr>
                             <td colSpan={3} className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Total:</td>
                             <td className="px-4 py-2 text-right text-sm font-bold text-emerald-700">
-                              ${pendingProducts.reduce((sum, pp) => sum + pp.quantity * pp.pricecompra, 0).toFixed(2)}
+                              ${formatPrice(pendingProducts.reduce((sum, pp) => sum + pp.quantity * pp.pricecompra, 0))}
                             </td>
                             <td></td>
                           </tr>
@@ -1344,7 +1347,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                           <div key={record._id} className="flex items-center justify-between rounded bg-gray-50 px-3 py-2 text-sm">
                             <span className="font-medium text-gray-900">{record.productName}</span>
                             <span className="text-gray-500">
-                              Cant: {record.quantity} x ${record.pricecompra?.toFixed(2) || '0.00'} = <span className="font-semibold text-gray-700">${((record.quantity * (record.pricecompra || 0))).toFixed(2)}</span> — {formatDateTime(record.recordedAt)}
+                              Cant: {record.quantity} x ${formatPrice(record.pricecompra || 0)} = <span className="font-semibold text-gray-700">${formatPrice(record.quantity * (record.pricecompra || 0))}</span> — {formatDateTime(record.recordedAt)}
                             </span>
                           </div>
                         ))}
