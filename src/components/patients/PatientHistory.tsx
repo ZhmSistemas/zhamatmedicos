@@ -144,6 +144,8 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
   const [productQuantity, setProductQuantity] = useState(1)
   const [pendingProducts, setPendingProducts] = useState<{ productId: string; productName: string; quantity: number; pricecompra: number }[]>([])
   const [expandedProductsHistory, setExpandedProductsHistory] = useState(false)
+  const [showNewProductModal, setShowNewProductModal] = useState(false)
+  const [newProductPrice, setNewProductPrice] = useState('')
   const [showEditPatientModal, setShowEditPatientModal] = useState(false)
   const [editPatientData, setEditPatientData] = useState({
     name: '',
@@ -509,6 +511,30 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
     setSelectedProductId('')
     setProductSearchQuery('')
     setProductQuantity(1)
+    setShowProductDropdown(false)
+    setProductHighlightedIndex(-1)
+  }
+
+  const openNewProductModal = () => {
+    setShowProductDropdown(false)
+    setNewProductPrice('')
+    setShowNewProductModal(true)
+  }
+
+  const addNewProductToPending = () => {
+    const price = parseFloat(newProductPrice)
+    if (!productSearchQuery.trim() || isNaN(price) || price < 0) return
+    setPendingProducts(prev => [...prev, {
+      productId: 'custom_' + Date.now(),
+      productName: productSearchQuery.trim(),
+      quantity: productQuantity,
+      pricecompra: price,
+    }])
+    setProductSearchQuery('')
+    setSelectedProductId('')
+    setProductQuantity(1)
+    setShowNewProductModal(false)
+    setNewProductPrice('')
     setShowProductDropdown(false)
     setProductHighlightedIndex(-1)
   }
@@ -1245,7 +1271,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                         placeholder="Escriba para buscar producto..."
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
                       />
-                      {showProductDropdown && filteredProducts.length > 0 && (
+                      {showProductDropdown && productSearchQuery && (
                         <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
                           {filteredProducts.map((p, i) => (
                             <button
@@ -1260,6 +1286,14 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                               {p.brand && <span className="text-xs text-gray-400">{p.brand}</span>}
                             </button>
                           ))}
+                          <button
+                            type="button"
+                            onMouseDown={openNewProductModal}
+                            className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-sm text-emerald-700 hover:bg-emerald-50"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span>Agregar &quot;{productSearchQuery}&quot; como producto nuevo</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1706,6 +1740,71 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                   className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
                 >
                   {isAdding ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Nuevo Producto</h2>
+              <button
+                onClick={() => setShowNewProductModal(false)}
+                className="rounded-full p-1 hover:bg-gray-100"
+              >
+                <X className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                <input
+                  type="text"
+                  value={productSearchQuery}
+                  disabled
+                  className="mt-1 block w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Precio <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addNewProductToPending()
+                    }
+                  }}
+                  placeholder="0"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewProductModal(false)}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={addNewProductToPending}
+                  disabled={!newProductPrice || isNaN(parseFloat(newProductPrice)) || parseFloat(newProductPrice) < 0}
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-70"
+                >
+                  Agregar
                 </button>
               </div>
             </div>
