@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader, AlertCircle, Brain, User, Activity, Stethoscope, HeartPulse, FlaskConical, Sparkles } from 'lucide-react'
+import { Send, Loader, AlertCircle, Brain, User, Activity, Stethoscope, HeartPulse, FlaskConical, Sparkles, Download, ClipboardCopy, Check } from 'lucide-react'
 import { Patient } from '@/lib/models/PatientModel'
 
 interface Message {
@@ -177,6 +177,90 @@ Verifica:
     }
   }
 
+  const [copySuccess, setCopySuccess] = useState(false)
+
+  function formatForWhatsApp(): string {
+    const date = new Date().toLocaleDateString('es-ES', {
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    })
+    const lines: string[] = []
+    lines.push('🧑‍⚕️ *ASESORÍA MÉDICA - ZHAMAT SALUD*')
+    lines.push('─────────────────────────')
+    lines.push(`👤 *Paciente:* ${patient.name} ${patient.lastName}`)
+    lines.push(`📅 *Fecha:* ${date}`)
+    lines.push('')
+
+    const consultationMessages = messages.filter((m) => m.role === 'assistant' && !m.content.startsWith('Hola, soy tu asistente'))
+    const hasConsultations = consultationMessages.length > 0
+
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.content.startsWith('Hola, soy tu asistente')) continue
+
+      if (msg.role === 'user') {
+        lines.push('─────────────────────────')
+        lines.push(`🙋 *Tú preguntaste:*`)
+        lines.push(msg.content)
+        lines.push('')
+      } else {
+        lines.push(`🤖 *Respuesta:*`)
+        lines.push(msg.content)
+        lines.push('')
+      }
+    }
+
+    if (!hasConsultations) {
+      lines.push('─────────────────────────')
+      lines.push('*📋 Resumen del paciente*')
+      lines.push('')
+      lines.push(`*Nombre:* ${patient.name} ${patient.lastName}`)
+      if (patient.birthDate) {
+        const age = Math.floor((Date.now() - new Date(patient.birthDate).getTime()) / 31557600000)
+        lines.push(`*Edad:* ${age} años`)
+      }
+      if (patient.gender) lines.push(`*Género:* ${patient.gender}`)
+      if (patient.weight) lines.push(`*Peso:* ${patient.weight} kg`)
+      if (patient.height) lines.push(`*Altura:* ${patient.height} cm`)
+      if (patient.diseases?.length) lines.push(`*Enfermedades:* ${patient.diseases.join(', ')}`)
+      if (patient.allergies?.length) lines.push(`*Alergias:* ${patient.allergies.join(', ')}`)
+      if (patient.medications?.length) lines.push(`*Medicamentos:* ${patient.medications.join(', ')}`)
+    }
+
+    lines.push('')
+    lines.push('─────────────────────────')
+    lines.push('🤖 *Zhamat Salud* — Asesoría con IA')
+    return lines.join('\n')
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(formatForWhatsApp())
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = formatForWhatsApp()
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    }
+  }
+
+  function handleDownload() {
+    const content = formatForWhatsApp()
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `consulta-ia-${patient.name.replace(/\s+/g, '_')}-${new Date().toISOString().slice(0, 10)}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
       {/* Header */}
@@ -188,9 +272,27 @@ Verifica:
           <h2 className="text-base font-semibold text-white">Asesor Médico con IA</h2>
           <p className="text-xs text-indigo-100">Deepseek &middot; An&aacute;lisis Inteligente</p>
         </div>
-        <div className="flex h-7 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[11px] text-white backdrop-blur-xs">
-          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-          En l&iacute;nea
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white/80 transition-all hover:bg-white/25 hover:text-white"
+            aria-label="Copiar conversaci&oacute;n"
+            title="Copiar conversaci&oacute;n"
+          >
+            {copySuccess ? <Check className="h-3.5 w-3.5" /> : <ClipboardCopy className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            onClick={handleDownload}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white/80 transition-all hover:bg-white/25 hover:text-white"
+            aria-label="Descargar conversaci&oacute;n"
+            title="Descargar conversaci&oacute;n"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex h-7 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[11px] text-white backdrop-blur-xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+            En l&iacute;nea
+          </div>
         </div>
       </div>
 
