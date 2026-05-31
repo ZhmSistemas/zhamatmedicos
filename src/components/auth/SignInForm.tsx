@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { showToast } from 'nextjs-toast-notify';
 
 // Esquema de validación con Zod
 const loginSchema = z.object({
@@ -51,7 +52,7 @@ export default function LoginForm() {
       });
 
       if (!res?.ok) {
-        console.log(res);
+        showToast.error(res?.error || 'Credenciales incorrectas', { position: 'top-center' });
         return;
       }
 
@@ -72,7 +73,7 @@ export default function LoginForm() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
         {/* Encabezado */}
         <div>

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { showToast } from 'nextjs-toast-notify';
 
 // Esquema de validación con Zod
 const registerSchema = z
@@ -43,7 +44,6 @@ type RegisterFormInputs = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -67,7 +67,6 @@ export default function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsLoading(true);
-    setServerError(null);
 
     try {      
       const response = await fetch('/api/auth/register', {
@@ -95,9 +94,9 @@ export default function RegisterForm() {
       
     } catch (error) {
       if (error instanceof Error) {
-        setServerError(error.message);
+        showToast.error(error.message, { position: 'top-center' });
       } else {
-        setServerError('Ocurrio un error inesperado');
+        showToast.error('Ocurrió un error inesperado', { position: 'top-center' });
       }
     } finally {
       setIsLoading(false);
@@ -105,11 +104,11 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
         {/* Encabezado */}
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="text-center text-3xl font-extrabold text-gray-900">
             Crear cuenta
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
@@ -119,13 +118,6 @@ export default function RegisterForm() {
             </a>
           </p>
         </div>
-
-        {/* Mensaje de error global */}
-        {serverError && (
-          <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-            {serverError}
-          </div>
-        )}
 
         {/* Formulario */}
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">

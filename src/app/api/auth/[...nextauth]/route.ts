@@ -55,7 +55,7 @@ export const authOptions: AuthOptions = {
           userFound.password
         );
 
-        if (!validPassword) throw new Error("Invalid credentials");
+        if (!validPassword) throw new Error("Credenciales invalidas");
 
         return {
           id: userFound._id.toString(),
