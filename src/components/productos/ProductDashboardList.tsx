@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Package, Search, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Package, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Product } from '@/lib/models/ProductLocalModel'
 import Image from 'next/image'
 
@@ -80,11 +80,11 @@ export default function ProductDashboardList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const fetchProducts = useCallback(async (p: number, search: string) => {
     setIsLoading(true)
@@ -112,15 +112,19 @@ export default function ProductDashboardList() {
   }, [])
 
   useEffect(() => {
-    fetchProducts(page, searchTerm)
-  }, [page, fetchProducts])
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
+    fetchProducts(page, debouncedSearch)
+  }, [page, debouncedSearch, fetchProducts])
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
-    if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => {
-      setPage(1)
-    }, 300)
   }
 
   if (selectedProduct) {
@@ -157,7 +161,9 @@ export default function ProductDashboardList() {
         {isLoading && products.length === 0
           ? 'Cargando productos...'
           : total > 0
-            ? `Mostrando ${Math.min((page - 1) * LIMIT + 1, total)}–${Math.min(page * LIMIT, total)} de ${total} producto${total !== 1 ? 's' : ''}`
+            ? searchTerm
+              ? `${total} resultado${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`
+              : `Mostrando ${Math.min((page - 1) * LIMIT + 1, total)}–${Math.min(page * LIMIT, total)} de ${total} producto${total !== 1 ? 's' : ''}`
             : '0 productos'}
       </p>
 
@@ -212,7 +218,7 @@ export default function ProductDashboardList() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPages > 1 && !searchTerm && (
             <div className="mt-6 flex items-center justify-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}

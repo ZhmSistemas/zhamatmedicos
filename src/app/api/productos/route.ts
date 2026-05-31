@@ -21,12 +21,21 @@ export const GET = async (request: Request) => {
         }
       : {}
 
+    const baseQuery = ProductModel.find(query)
+      .select('name description dirigido uso image_url pricecompra priceventa brand')
+
+    if (search) {
+      const products = await baseQuery.lean()
+      return Response.json({
+        products,
+        total: products.length,
+        page: 1,
+        totalPages: 1,
+      }, { status: 200 })
+    }
+
     const [products, total] = await Promise.all([
-      ProductModel.find(query)
-        .select('name description dirigido uso image_url pricecompra priceventa brand')
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
+      baseQuery.skip((page - 1) * limit).limit(limit).lean(),
       ProductModel.countDocuments(query),
     ])
 
