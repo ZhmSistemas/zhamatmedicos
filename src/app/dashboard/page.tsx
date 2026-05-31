@@ -240,7 +240,7 @@ export default function DashboardPage() {
                             <Users className="h-7 w-7" />
                           </div>
                           <div>
-                            <p className="text-3xl font-bold tracking-tight">{patientCount ?? '-'}</p>
+                            <p className="text-3xl font-bold tracking-tight tabular-nums">{patientCount ?? '-'}</p>
                             <p className="text-sm text-white/80">Pacientes Registrados</p>
                           </div>
                         </div>
