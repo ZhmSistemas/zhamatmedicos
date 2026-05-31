@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader, AlertCircle, CheckCircle, Brain } from 'lucide-react'
+import { Send, Loader, AlertCircle, Brain, User, Activity, Stethoscope, HeartPulse, FlaskConical, Sparkles } from 'lucide-react'
 import { Patient } from '@/lib/models/PatientModel'
 
 interface Message {
@@ -12,6 +12,64 @@ interface Message {
 
 interface MedicalAIConsultantProps {
   patient: Patient
+}
+
+const quickActions = [
+  {
+    label: 'Analizar vitales',
+    prompt: 'Analiza los valores de presión arterial y glucosa actuales',
+    icon: Activity,
+    color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 active:bg-sky-300',
+  },
+  {
+    label: 'Recomendaciones',
+    prompt: '¿Qué procedimientos médicos me recomiendas para este paciente?',
+    icon: Stethoscope,
+    color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 active:bg-indigo-300',
+  },
+  {
+    label: 'Hemograma',
+    prompt: 'Interpreta los resultados del hemograma',
+    icon: FlaskConical,
+    color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 active:bg-violet-300',
+  },
+  {
+    label: 'Alertas',
+    prompt: '¿Hay algún valor crítico o anómalo que deba alertar?',
+    icon: AlertCircle,
+    color: 'bg-rose-100 text-rose-700 hover:bg-rose-200 active:bg-rose-300',
+  },
+  {
+    label: 'Recomendar productos',
+    prompt: 'Analiza los productos que este paciente ha consumido, su historial de compras y dime si hay algún patrón o recomendación basada en sus condiciones de salud',
+    icon: HeartPulse,
+    color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 active:bg-emerald-300',
+  },
+  {
+    label: 'Productos adquiridos',
+    prompt: 'Muéstrame el historial de productos adquiridos por el paciente, total gastado y frecuencia de compra',
+    icon: Sparkles,
+    color: 'bg-teal-100 text-teal-700 hover:bg-teal-200 active:bg-teal-300',
+  },
+]
+
+function TypingIndicator() {
+  return (
+    <div className="flex justify-start" role="status" aria-label="La IA está generando una respuesta">
+      <div className="flex items-end gap-2">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-blue-600 shadow-sm">
+          <Brain className="h-4 w-4 text-white" />
+        </div>
+        <div className="rounded-2xl rounded-bl-sm bg-white px-4 py-3 shadow-sm ring-1 ring-gray-200">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:0ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:300ms]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProps) {
@@ -30,7 +88,6 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
     scrollToBottom()
   }, [messages])
 
-  // Mensaje inicial de bienvenida
   useEffect(() => {
     const welcomeMessage: Message = {
       role: 'assistant',
@@ -49,7 +106,7 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
   }, [patient])
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() || loading) return
 
     const userMessage: Message = {
       role: 'user',
@@ -65,9 +122,7 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
     try {
       const response = await fetch('/api/ai/medical-consultation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientData: patient,
           question: inputValue,
@@ -76,8 +131,7 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
 
       if (!response.ok) {
         const errorData = await response.json()
-        const errorMsg = errorData.error || `Error HTTP ${response.status}`
-        throw new Error(errorMsg)
+        throw new Error(errorData.error || `Error HTTP ${response.status}`)
       }
 
       const data = await response.json()
@@ -100,7 +154,13 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
 
       const errorMsg: Message = {
         role: 'assistant',
-        content: `❌ Error: ${errorMessage}\n\nVerifica:\n1. Tu API key de Deepseek está configurada en .env\n2. La API key es válida\n3. Tienes saldo en tu cuenta de Deepseek\n4. Intenta nuevamente en unos momentos`,
+        content: `Error: ${errorMessage}
+
+Verifica:
+1. Tu API key de Deepseek está configurada en .env
+2. La API key es válida
+3. Tienes saldo en tu cuenta de Deepseek
+4. Intenta nuevamente en unos momentos`,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMsg])
@@ -110,7 +170,7 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
@@ -118,145 +178,143 @@ export default function MedicalAIConsultant({ patient }: MedicalAIConsultantProp
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-lg">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-lg flex items-center gap-2">
-        <Brain className="w-6 h-6" />
-        <div>
-          <h2 className="font-bold text-lg">Asesor Médico con IA</h2>
-          <p className="text-sm text-blue-100">Deepseek - Análisis Inteligente de Pacientes</p>
+      <div className="flex items-center gap-3 bg-linear-to-r from-indigo-600 to-blue-600 px-5 py-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-xs">
+          <Brain className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-base font-semibold text-white">Asesor Médico con IA</h2>
+          <p className="text-xs text-indigo-100">Deepseek &middot; An&aacute;lisis Inteligente</p>
+        </div>
+        <div className="flex h-7 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[11px] text-white backdrop-blur-xs">
+          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+          En l&iacute;nea
         </div>
       </div>
 
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, idx) => (
-          <div
-            key={idx}
-            className={`flex ${
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto bg-gray-50/50 px-4 py-5">
+        <div className="space-y-4">
+          {messages.map((message, idx) => (
             <div
-              className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-lg ${
-                message.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-none'
-                  : 'bg-white text-gray-800 border border-blue-200 rounded-bl-none shadow-md'
-              }`}
+              key={idx}
+              className={`flex items-end gap-2 ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              } animate-fade-in-up [animation-duration:300ms]`}
             >
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                {message.content}
-              </p>
-              <p
-                className={`text-xs mt-2 ${
+              {message.role === 'assistant' && (
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-blue-600 shadow-sm">
+                  <Brain className="h-4 w-4 text-white" />
+                </div>
+              )}
+
+              <div
+                className={`max-w-sm px-4 py-3 sm:max-w-md lg:max-w-lg xl:max-w-xl ${
                   message.role === 'user'
-                    ? 'text-blue-100'
-                    : 'text-gray-500'
+                    ? 'rounded-2xl rounded-br-sm bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200'
+                    : 'rounded-2xl rounded-bl-sm bg-white text-gray-800 shadow-sm ring-1 ring-gray-200'
                 }`}
               >
-                {message.timestamp.toLocaleTimeString('es-ES', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            </div>
-          </div>
-        ))}
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                  {message.content}
+                </p>
+                <p
+                  className={`mt-1.5 text-right text-[11px] font-medium ${
+                    message.role === 'user' ? 'text-blue-200' : 'text-gray-400'
+                  }`}
+                >
+                  {message.timestamp.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
 
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white text-gray-800 px-4 py-3 rounded-lg border border-blue-200 flex items-center gap-2">
-              <Loader className="w-4 h-4 animate-spin text-blue-600" />
-              <span className="text-sm">Analizando datos médicos...</span>
+              {message.role === 'user' && (
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 shadow-sm">
+                  <User className="h-4 w-4 text-gray-600" />
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          ))}
 
-        <div ref={messagesEndRef} />
+          {loading && <TypingIndicator />}
+
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Disclaimer */}
-      <div className="px-4 py-2 bg-yellow-50 border-t border-yellow-200">
-        <div className="flex gap-2 text-xs text-yellow-800">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <p>
-            Este asistente proporciona análisis informativo. No reemplaza la evaluación médica profesional.
+      {/* <div className="border-t border-gray-100 bg-amber-50/80 px-5 py-2.5">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+          <p className="text-[11px] leading-relaxed text-amber-800">
+            Este asistente proporciona an&aacute;lisis informativo. No reemplaza la evaluaci&oacute;n m&eacute;dica profesional.
             Las recomendaciones deben ser validadas por profesionales de salud calificados.
           </p>
         </div>
-      </div>
+      </div> */}
 
-      {/* Input Area */}
-      <div className="border-t border-blue-200 p-4 bg-white rounded-b-lg">
+      {/* Input */}
+      <div className="border-t border-gray-200 bg-white px-4 pb-4 pt-3">
         {error && (
-          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span className="flex-1">{error}</span>
+            <button
+              onClick={() => setError('')}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-100 hover:text-red-600"
+              aria-label="Cerrar mensaje de error"
+            >
+              &times;
+            </button>
           </div>
         )}
 
         <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Pregunta sobre los datos del paciente..."
-            className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={loading}
-          />
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Pregunta sobre los datos del paciente..."
+              disabled={loading}
+              className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Mensaje para el asistente IA"
+            />
+          </div>
           <button
             onClick={handleSendMessage}
             disabled={loading || !inputValue.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-xl bg-linear-to-r from-indigo-600 to-blue-600 text-white shadow-sm transition-all hover:shadow-md hover:shadow-indigo-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 active:translate-y-0"
+            aria-label={loading ? 'Enviando mensaje...' : 'Enviar mensaje'}
           >
             {loading ? (
-              <Loader className="w-4 h-4 animate-spin" />
+              <Loader className="h-5 w-5 animate-spin" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className="h-5 w-5" />
             )}
           </button>
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setInputValue('Analiza los valores de presión arterial y glucosa actuales')}
-            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-          >
-            Analizar vitales
-          </button>
-          <button
-            onClick={() => setInputValue('¿Qué procedimientos médicos me recomiendas para este paciente?')}
-            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-          >
-            Recomendaciones
-          </button>
-          <button
-            onClick={() => setInputValue('Interpreta los resultados del hemograma')}
-            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-          >
-            Hemograma
-          </button>
-          <button
-            onClick={() => setInputValue('¿Hay algún valor crítico o anómalo que deba alertar?')}
-            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-          >
-            Alertas
-          </button>
-          <button
-            onClick={() => setInputValue('Analiza los productos que este paciente ha consumido, su historial de compras y dime si hay algún patrón o recomendación basada en sus condiciones de salud')}
-            className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 transition-colors"
-          >
-            Recomendar productos
-          </button>
-          <button
-            onClick={() => setInputValue('Muéstrame el historial de productos adquiridos por el paciente, total gastado y frecuencia de compra')}
-            className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
-          >
-            Productos adquiridos
-          </button>
+        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Acciones r&aacute;pidas">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              onClick={() => setInputValue(action.prompt)}
+              disabled={loading}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all ${action.color} disabled:cursor-not-allowed disabled:opacity-40`}
+              aria-label={`Preguntar: ${action.label}`}
+            >
+              <action.icon className="h-3.5 w-3.5" />
+              {action.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
