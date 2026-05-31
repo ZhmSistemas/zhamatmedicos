@@ -36,7 +36,9 @@ function ProductDetail({ product, onBack }: { product: Product; onBack: () => vo
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         {product.image_url ? (
           <div className="mb-6 flex justify-center">
-            <img
+            <Image
+              width={600}
+              height={600}
               src={product.image_url}
               alt={product.name}
               className="h-72 w-full rounded-xl object-cover sm:w-96"
@@ -115,7 +117,7 @@ export default function ProductDashboardList() {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm)
       setPage(1)
-    }, 300)
+    }, 200)
     return () => clearTimeout(timer)
   }, [searchTerm])
 
