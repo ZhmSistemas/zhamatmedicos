@@ -32,6 +32,14 @@ const measurementSchema = z.object({
     platelets: z.string().optional(),
     hemoglobin: z.string().optional(),
     hematocrit: z.string().optional(),
+    volumenCorpuscularMedio: z.string().optional(),
+    bilirubina: z.string().optional(),
+    bilirubinaTotal: z.string().optional(),
+    bilirubinaDirecta: z.string().optional(),
+    bilirubinaIndirecta: z.string().optional(),
+    nitrogenoUreico: z.string().optional(),
+    creatinina: z.string().optional(),
+    hierroTotal: z.string().optional(),
     observations: z.string().optional(),
   }).optional(),
 })
@@ -65,6 +73,8 @@ interface HemogramRecord {
   platelets: number | null
   hemoglobin: number | null
   hematocrit: number | null
+  volumenCorpuscularMedio: number | null
+  bilirubina: number | null
   observations: string
   recordedAt: string
 }
@@ -90,6 +100,14 @@ interface Patient {
     platelets: number | null
     hemoglobin: number | null
     hematocrit: number | null
+    volumenCorpuscularMedio: number | null
+    bilirubina: number | null
+    bilirubinaTotal: number | null
+    bilirubinaDirecta: number | null
+    bilirubinaIndirecta: number | null
+    nitrogenoUreico: number | null
+    creatinina: number | null
+    hierroTotal: number | null
     observations: string
   }
   bloodPressure: {
@@ -212,6 +230,14 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
         platelets: '',
         hemoglobin: '',
         hematocrit: '',
+        volumenCorpuscularMedio: '',
+        bilirubina: '',
+        bilirubinaTotal: '',
+        bilirubinaDirecta: '',
+        bilirubinaIndirecta: '',
+        nitrogenoUreico: '',
+        creatinina: '',
+        hierroTotal: '',
         observations: '',
       },
     },
@@ -300,6 +326,14 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
           platelets: data.hemogram.platelets ? parseFloat(data.hemogram.platelets) : null,
           hemoglobin: data.hemogram.hemoglobin ? parseFloat(data.hemogram.hemoglobin) : null,
           hematocrit: data.hemogram.hematocrit ? parseFloat(data.hemogram.hematocrit) : null,
+          bilirubina: data.hemogram.bilirubina ? parseFloat(data.hemogram.bilirubina) : null,
+          volumenCorpuscularMedio: data.hemogram.volumenCorpuscularMedio ? parseFloat(data.hemogram.volumenCorpuscularMedio) : null,
+          bilirubinaTotal: data.hemogram.bilirubinaTotal ? parseFloat(data.hemogram.bilirubinaTotal) : null,
+          bilirubinaDirecta: data.hemogram.bilirubinaDirecta ? parseFloat(data.hemogram.bilirubinaDirecta) : null,
+          bilirubinaIndirecta: data.hemogram.bilirubinaIndirecta ? parseFloat(data.hemogram.bilirubinaIndirecta) : null,
+          nitrogenoUreico: data.hemogram.nitrogenoUreico ? parseFloat(data.hemogram.nitrogenoUreico) : null,
+          creatinina: data.hemogram.creatinina ? parseFloat(data.hemogram.creatinina) : null,
+          hierroTotal: data.hemogram.hierroTotal ? parseFloat(data.hemogram.hierroTotal) : null,
           observations: data.hemogram.observations || '',
         }
       }
@@ -835,6 +869,9 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                     {patient.hemogram.hemoglobin ?? '--'}
                   </p>
                   <p className="text-sm text-gray-500">Hemoglobina (g/dL)</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Bilirrubina: {patient.hemogram.bilirubina ?? '--'} mg/dL
+                  </p>
                 </div>
               </div>
             </div>
@@ -1552,6 +1589,69 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                           type="number"
                           step="0.1"
                           {...registerMeasurement('hemogram.hematocrit')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Volumen Corpuscular Medio (VCM) (fL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.volumenCorpuscularMedio')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Bilirrubina Total (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.bilirubinaTotal')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Bilirrubina Directa (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.bilirubinaDirecta')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Bilirrubina Indirecta (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.bilirubinaIndirecta')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Nitrógeno Ureico (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.nitrogenoUreico')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Creatinina (suero / fluidos) (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...registerMeasurement('hemogram.creatinina')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Hierro Total (µg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.hierroTotal')}
                           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                         />
                       </div>

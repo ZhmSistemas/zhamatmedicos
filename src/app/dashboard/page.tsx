@@ -8,6 +8,7 @@ import PatientList from '@/components/patients/PatientList'
 import MedicalAIConsultant from '@/components/ai/MedicalAIConsultant'
 import ProductDashboardList from '@/components/productos/ProductDashboardList'
 import { Patient } from '@/lib/models/PatientModel'
+import type { ReferenceStandards } from '@/lib/models/ReferenceModel'
 
 type ActionType = 'inicio' | 'create' | 'search' | 'edit' | 'list' | 'ai-consultant' | 'list-products' | null
 
@@ -21,26 +22,33 @@ interface ExtendedSelectedPatient extends Patient {
   cedula: string
 }
 
-const BLOOD_PRESSURE_STANDARDS = {
-  normal: { systolic: [90, 120], diastolic: [60, 80], label: 'Normal', color: 'text-green-700 bg-green-50 border-green-200' },
-  elevated: { systolic: [120, 129], diastolic: [60, 80], label: 'Elevada', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-  high1: { systolic: [130, 139], diastolic: [80, 89], label: 'Grado 1', color: 'text-orange-700 bg-orange-50 border-orange-200' },
-  high2: { systolic: [140, 180], diastolic: [90, 120], label: 'Grado 2', color: 'text-red-700 bg-red-50 border-red-200' },
-  crisis: { systolic: [180, 250], diastolic: [120, 150], label: 'Crisis', color: 'text-red-900 bg-red-100 border-red-300' },
-}
-
-const BLOOD_SUGAR_STANDARDS = {
-  normal: { min: 70, max: 100, type: 'ayunas', label: 'Normal', color: 'text-green-700 bg-green-50 border-green-200' },
-  prediabetes: { min: 100, max: 126, type: 'ayunas', label: 'Prediabetes', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-  diabetes: { min: 126, max: 250, type: 'ayunas', label: 'Diabetes', color: 'text-red-700 bg-red-50 border-red-200' },
-}
-
-const HEMOGRAM_STANDARDS = {
-  redBloodCells: { min: 4.0, max: 5.5, unit: 'M/μL', label: 'Glóbulos Rojos', icon: '🩸' },
-  whiteBloodCells: { min: 4, max: 11, unit: 'K/μL', label: 'Glóbulos Blancos', icon: '⚪' },
-  platelets: { min: 150, max: 400, unit: 'K/μL', label: 'Plaquetas', icon: '🛡️' },
-  hemoglobin: { min: 12, max: 17.5, unit: 'g/dL', label: 'Hemoglobina', icon: '🔴' },
-  hematocrit: { min: 36, max: 50, unit: '%', label: 'Hematocrito', icon: '💧' },
+const REFERENCE_DEFAULTS: Omit<ReferenceStandards, 'name'> = {
+  bloodPressure: {
+    normal: { systolic: [90, 120], diastolic: [60, 80], label: 'Normal', color: 'text-green-700 bg-green-50 border-green-200' },
+    elevated: { systolic: [120, 129], diastolic: [60, 80], label: 'Elevada', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+    high1: { systolic: [130, 139], diastolic: [80, 89], label: 'Grado 1', color: 'text-orange-700 bg-orange-50 border-orange-200' },
+    high2: { systolic: [140, 180], diastolic: [90, 120], label: 'Grado 2', color: 'text-red-700 bg-red-50 border-red-200' },
+    crisis: { systolic: [180, 250], diastolic: [120, 150], label: 'Crisis', color: 'text-red-900 bg-red-100 border-red-300' },
+  },
+  bloodSugar: {
+    normal: { min: 70, max: 100, type: 'ayunas', label: 'Normal', color: 'text-green-700 bg-green-50 border-green-200' },
+    prediabetes: { min: 100, max: 126, type: 'ayunas', label: 'Prediabetes', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+    diabetes: { min: 126, max: 250, type: 'ayunas', label: 'Diabetes', color: 'text-red-700 bg-red-50 border-red-200' },
+  },
+  hemogram: {
+    redBloodCells: { min: 4.0, max: 5.5, unit: 'M/μL', label: 'Glóbulos Rojos', icon: '🩸' },
+    whiteBloodCells: { min: 4, max: 11, unit: 'K/μL', label: 'Glóbulos Blancos', icon: '⚪' },
+    platelets: { min: 150, max: 400, unit: 'K/μL', label: 'Plaquetas', icon: '🛡️' },
+    hemoglobin: { min: 12, max: 17.5, unit: 'g/dL', label: 'Hemoglobina', icon: '🔴' },
+    hematocrit: { min: 36, max: 50, unit: '%', label: 'Hematocrito', icon: '💧' },
+    volumenCorpuscularMedio: { min: 80, max: 100, unit: 'fL', label: 'Volumen Corpuscular Medio (VCM)', icon: '📏' },
+    bilirubinaTotal: { min: 0.3, max: 1.2, unit: 'mg/dL', label: 'Bilirrubina Total', icon: '🟡' },
+    bilirubinaDirecta: { min: 0, max: 0.3, unit: 'mg/dL', label: 'Bilirrubina Directa', icon: '🟢' },
+    bilirubinaIndirecta: { min: 0.2, max: 0.8, unit: 'mg/dL', label: 'Bilirrubina Indirecta', icon: '🟤' },
+    nitrogenoUreico: { min: 7, max: 20, unit: 'mg/dL', label: 'Nitrógeno Ureico', icon: '🧪' },
+    creatinina: { min: 0.6, max: 1.3, unit: 'mg/dL', label: 'Creatinina', icon: '🧬' },
+    hierroTotal: { min: 60, max: 170, unit: 'µg/dL', label: 'Hierro Total', icon: '⚙️' },
+  },
 }
 
 const menuItems = [
@@ -59,6 +67,12 @@ export default function DashboardPage() {
   const [patientData, setPatientData] = useState<ExtendedSelectedPatient | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [patientCount, setPatientCount] = useState<number | null>(null)
+  const [referenceStandards, setReferenceStandards] = useState<ReferenceStandards>({
+    name: 'default',
+    ...REFERENCE_DEFAULTS,
+  })
+  const [referenceSaving, setReferenceSaving] = useState(false)
+  const [referenceSaveMessage, setReferenceSaveMessage] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/patients/count')
@@ -66,6 +80,19 @@ export default function DashboardPage() {
       .then(data => setPatientCount(data.count ?? 0))
       .catch(() => setPatientCount(0))
   }, [refreshKey])
+
+  useEffect(() => {
+    fetch('/api/references')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.bloodPressure && data.bloodSugar && data.hemogram) {
+          setReferenceStandards(data)
+        }
+      })
+      .catch(() => {
+        setReferenceSaveMessage('No se pudieron cargar las referencias, usando valores predeterminados.')
+      })
+  }, [])
 
   const handlePatientSelect = (patient: { cedula: string; name: string; lastName: string }) => {
     setSelectedPatient(patient)
@@ -96,10 +123,64 @@ export default function DashboardPage() {
     setRefreshKey((k) => k + 1)
   }
 
+  const updateReferenceValue = (
+    section: keyof Omit<ReferenceStandards, 'name'>,
+    category: string,
+    field: string,
+    value: number,
+    index?: number
+  ) => {
+    setReferenceStandards((prev) => {
+      const next = { ...prev, [section]: { ...prev[section] } } as ReferenceStandards
+      const target = { ...((next[section] as any)[category]) }
+
+      if (section === 'bloodPressure' && typeof index === 'number') {
+        const array = [...(target[field] as [number, number])]
+        array[index] = value
+        target[field] = array
+      } else {
+        target[field] = value
+      }
+
+      ;(next[section] as any)[category] = target
+      return next
+    })
+  }
+
+  const saveReferenceStandards = async () => {
+    setReferenceSaving(true)
+    setReferenceSaveMessage(null)
+
+    try {
+      const response = await fetch('/api/references', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(referenceStandards),
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setReferenceStandards(data)
+        setReferenceSaveMessage('Referencias guardadas correctamente.')
+      } else {
+        setReferenceSaveMessage(data?.message || 'Error guardando las referencias.')
+      }
+    } catch (error) {
+      console.error('Error guardando referencias:', error)
+      setReferenceSaveMessage('Error guardando las referencias.')
+    } finally {
+      setReferenceSaving(false)
+    }
+  }
+
+  const resetReferenceStandards = () => {
+    setReferenceStandards({ name: 'default', ...REFERENCE_DEFAULTS })
+    setReferenceSaveMessage('Valores restablecidos a los predeterminados.')
+  }
+
   const currentMenuItem = menuItems.find(m => m.id === activeAction)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 px-4 py-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex animate-fade-in-up items-center justify-between">
           <div>
@@ -226,6 +307,158 @@ export default function DashboardPage() {
                       }} />
                     </div>
                   )
+                ) : activeAction === 'inicio' ? (
+                  <div className="space-y-6">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-900">Referencias de Tensión Arterial</h2>
+                            <p className="text-sm text-gray-500">Ajuste los rangos de referencia para sus pacientes.</p>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          {Object.entries(referenceStandards.bloodPressure).map(([key, value]) => (
+                            <div key={key} className="rounded-2xl border border-gray-200 p-4">
+                              <div className="mb-3 flex items-center justify-between gap-3">
+                                <h3 className="text-sm font-semibold text-gray-900">{value.label}</h3>
+                                <span className="text-xs text-gray-500">{key}</span>
+                              </div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <label className="block text-xs uppercase tracking-wide text-gray-500">Sistólica</label>
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <input
+                                      className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                      type="number"
+                                      value={value.systolic[0]}
+                                      onChange={(event) => updateReferenceValue('bloodPressure', key, 'systolic', Number(event.target.value), 0)}
+                                    />
+                                    <span className="text-sm text-gray-500">-</span>
+                                    <input
+                                      className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                      type="number"
+                                      value={value.systolic[1]}
+                                      onChange={(event) => updateReferenceValue('bloodPressure', key, 'systolic', Number(event.target.value), 1)}
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-xs uppercase tracking-wide text-gray-500">Diastólica</label>
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <input
+                                      className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                      type="number"
+                                      value={value.diastolic[0]}
+                                      onChange={(event) => updateReferenceValue('bloodPressure', key, 'diastolic', Number(event.target.value), 0)}
+                                    />
+                                    <span className="text-sm text-gray-500">-</span>
+                                    <input
+                                      className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                      type="number"
+                                      value={value.diastolic[1]}
+                                      onChange={(event) => updateReferenceValue('bloodPressure', key, 'diastolic', Number(event.target.value), 1)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-900">Referencias de Glucosa</h2>
+                            <p className="text-sm text-gray-500">Ajuste los límites de cada categoría.</p>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          {Object.entries(referenceStandards.bloodSugar).map(([key, value]) => (
+                            <div key={key} className="grid gap-3 rounded-2xl border border-gray-200 p-4 sm:grid-cols-2">
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{value.label}</div>
+                                <div className="text-xs text-gray-500">{value.type}</div>
+                              </div>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <input
+                                  className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                  type="number"
+                                  value={value.min}
+                                  onChange={(event) => updateReferenceValue('bloodSugar', key, 'min', Number(event.target.value))}
+                                />
+                                <input
+                                  className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                  type="number"
+                                  value={value.max}
+                                  onChange={(event) => updateReferenceValue('bloodSugar', key, 'max', Number(event.target.value))}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    </div>
+
+                    <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900">Referencias del Hemograma</h2>
+                          <p className="text-sm text-gray-500">Modifique los rangos de cada parámetro.</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={referenceSaving}
+                            onClick={saveReferenceStandards}
+                            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                          >
+                            {referenceSaving ? 'Guardando...' : 'Guardar Referencias'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={referenceSaving}
+                            onClick={resetReferenceStandards}
+                            className="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                          >
+                            Restablecer predeterminados
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {Object.entries(referenceStandards.hemogram).map(([key, value]) => (
+                          <div key={key} className="rounded-2xl border border-gray-200 p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div>
+                                <h3 className="text-sm font-semibold text-gray-900">{value.label}</h3>
+                                <p className="text-xs text-gray-500">{value.unit}</p>
+                              </div>
+                              <span className="text-xl">{value.icon}</span>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <label className="block text-xs uppercase tracking-wide text-gray-500">Mínimo</label>
+                              <input
+                                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                type="number"
+                                value={value.min}
+                                onChange={(event) => updateReferenceValue('hemogram', key, 'min', Number(event.target.value))}
+                              />
+                              <label className="block text-xs uppercase tracking-wide text-gray-500">Máximo</label>
+                              <input
+                                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                                type="number"
+                                value={value.max}
+                                onChange={(event) => updateReferenceValue('hemogram', key, 'max', Number(event.target.value))}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {referenceSaveMessage ? (
+                        <div className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">{referenceSaveMessage}</div>
+                      ) : null}
+                    </section>
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -257,12 +490,12 @@ export default function DashboardPage() {
                             <Heart className="h-7 w-7" />
                           </div>
                           <div>
-                            <p className="text-3xl font-bold tracking-tight">{BLOOD_PRESSURE_STANDARDS.normal.label}</p>
+                            <p className="text-3xl font-bold tracking-tight">{referenceStandards.bloodPressure.normal.label}</p>
                             <p className="text-sm text-white/80">Tensión Normal</p>
                           </div>
                         </div>
                         <div className="mt-3 text-xs text-white/60">
-                          Sistólica: 90-120 / Diastólica: 60-80 mmHg
+                          Sistólica: {referenceStandards.bloodPressure.normal.systolic[0]}-{referenceStandards.bloodPressure.normal.systolic[1]} / Diastólica: {referenceStandards.bloodPressure.normal.diastolic[0]}-{referenceStandards.bloodPressure.normal.diastolic[1]} mmHg
                         </div>
                       </div>
 
@@ -274,12 +507,12 @@ export default function DashboardPage() {
                             <Droplets className="h-7 w-7" />
                           </div>
                           <div>
-                            <p className="text-3xl font-bold tracking-tight">{BLOOD_SUGAR_STANDARDS.normal.label}</p>
+                            <p className="text-3xl font-bold tracking-tight">{referenceStandards.bloodSugar.normal.label}</p>
                             <p className="text-sm text-white/80">Glucosa Normal</p>
                           </div>
                         </div>
                         <div className="mt-3 text-xs text-white/60">
-                          70-100 mg/dL en ayunas
+                          {referenceStandards.bloodSugar.normal.min}-{referenceStandards.bloodSugar.normal.max} mg/dL en ayunas
                         </div>
                       </div>
                     </div>
@@ -292,7 +525,7 @@ export default function DashboardPage() {
                         <h3 className="text-base font-semibold text-gray-900">Parámetros de Referencia — Tensión Arterial</h3>
                       </div>
                       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                        {Object.entries(BLOOD_PRESSURE_STANDARDS).map(([key, val]) => (
+                        {Object.entries(referenceStandards.bloodPressure).map(([key, val]) => (
                           <div key={key} className={`rounded-xl border p-3 transition-all hover:shadow-sm ${val.color}`}>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-semibold uppercase tracking-wider">{val.label}</span>
@@ -324,11 +557,11 @@ export default function DashboardPage() {
                         <h3 className="text-base font-semibold text-gray-900">Parámetros de Referencia — Glucosa en Sangre</h3>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
-                        {Object.entries(BLOOD_SUGAR_STANDARDS).map(([key, val]) => (
+                        {Object.entries(referenceStandards.bloodSugar).map(([key, val]) => (
                           <div key={key} className={`rounded-xl border p-4 transition-all hover:shadow-sm ${val.color}`}>
                             <p className="text-xs font-semibold uppercase tracking-wider">{val.label}</p>
                             <p className="mt-1 text-2xl font-bold tracking-tight">
-                              {key === 'diabetes' ? '≥126' : `${val.min}-${val.max}`}
+                              {`${val.min}-${val.max}`}
                             </p>
                             <p className="text-xs text-gray-400">mg/dL · En ayunas</p>
                           </div>
@@ -344,7 +577,7 @@ export default function DashboardPage() {
                         <h3 className="text-base font-semibold text-gray-900">Parámetros de Referencia — Hemograma</h3>
                       </div>
                       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                        {Object.entries(HEMOGRAM_STANDARDS).map(([key, val]) => (
+                        {Object.entries(referenceStandards.hemogram).map(([key, val]) => (
                           <div key={key} className="rounded-xl border border-gray-100 bg-gray-50/50 p-3 transition-all hover:border-gray-200 hover:shadow-sm">
                             <p className="text-xs font-medium text-gray-500">{val.label}</p>
                             <p className="mt-1 text-lg font-bold text-gray-800">{val.min}-{val.max}</p>

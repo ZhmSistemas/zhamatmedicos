@@ -23,6 +23,14 @@ const patientSchema = z.object({
     platelets: z.number().optional().nullable(),
     hemoglobin: z.number().optional().nullable(),
     hematocrit: z.number().optional().nullable(),
+    volumenCorpuscularMedio: z.number().optional().nullable(),
+    bilirubina: z.number().optional().nullable(),
+    bilirubinaTotal: z.number().optional().nullable(),
+    bilirubinaDirecta: z.number().optional().nullable(),
+    bilirubinaIndirecta: z.number().optional().nullable(),
+    nitrogenoUreico: z.number().optional().nullable(),
+    creatinina: z.number().optional().nullable(),
+    hierroTotal: z.number().optional().nullable(),
     observations: z.string().optional().default(''),
   }).optional(),
   bloodPressure: z.object({
@@ -58,7 +66,21 @@ export const POST = async (request: NextRequest) => {
       ...data,
       weightHistory: data.weight != null ? [{ value: data.weight, recordedAt: now }] : [],
     }
-    if (data.hemogram && (data.hemogram.redBloodCells != null || data.hemogram.whiteBloodCells != null || data.hemogram.platelets != null || data.hemogram.hemoglobin != null || data.hemogram.hematocrit != null)) {
+    if (data.hemogram && (
+      data.hemogram.redBloodCells != null ||
+      data.hemogram.whiteBloodCells != null ||
+      data.hemogram.platelets != null ||
+      data.hemogram.hemoglobin != null ||
+      data.hemogram.hematocrit != null ||
+      data.hemogram.volumenCorpuscularMedio != null ||
+      data.hemogram.bilirubina != null ||
+      data.hemogram.bilirubinaTotal != null ||
+      data.hemogram.bilirubinaDirecta != null ||
+      data.hemogram.bilirubinaIndirecta != null ||
+      data.hemogram.nitrogenoUreico != null ||
+      data.hemogram.creatinina != null ||
+      data.hemogram.hierroTotal != null
+    )) {
       patientData.hemogramHistory = [{
         ...data.hemogram,
         recordedAt: now,

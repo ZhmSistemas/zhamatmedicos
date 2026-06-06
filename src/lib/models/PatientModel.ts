@@ -21,6 +21,14 @@ export type Patient = {
     platelets: number | null
     hemoglobin: number | null
     hematocrit: number | null
+    volumenCorpuscularMedio: number | null
+    bilirubina: number | null
+    bilirubinaTotal: number | null
+    bilirubinaDirecta: number | null
+    bilirubinaIndirecta: number | null
+    nitrogenoUreico: number | null
+    creatinina: number | null
+    hierroTotal: number | null
     observations: string
   }
   bloodPressure: {
@@ -41,6 +49,14 @@ export type Patient = {
     platelets: number | null
     hemoglobin: number | null
     hematocrit: number | null
+    volumenCorpuscularMedio: number | null
+    bilirubina: number | null
+    bilirubinaTotal: number | null
+    bilirubinaDirecta: number | null
+    bilirubinaIndirecta: number | null
+    nitrogenoUreico: number | null
+    creatinina: number | null
+    hierroTotal: number | null
     observations: string
     recordedAt: string
   }>
@@ -99,6 +115,14 @@ const PatientSchema = new mongoose.Schema(
       platelets: { type: Number, default: null },
       hemoglobin: { type: Number, default: null },
       hematocrit: { type: Number, default: null },
+      volumenCorpuscularMedio: { type: Number, default: null },
+      bilirubina: { type: Number, default: null },
+      bilirubinaTotal: { type: Number, default: null },
+      bilirubinaDirecta: { type: Number, default: null },
+      bilirubinaIndirecta: { type: Number, default: null },
+      nitrogenoUreico: { type: Number, default: null },
+      creatinina: { type: Number, default: null },
+      hierroTotal: { type: Number, default: null },
       observations: { type: String, default: '' },
     },
     bloodPressure: {
@@ -119,6 +143,14 @@ const PatientSchema = new mongoose.Schema(
         platelets: { type: Number, default: null },
         hemoglobin: { type: Number, default: null },
         hematocrit: { type: Number, default: null },
+        volumenCorpuscularMedio: { type: Number, default: null },
+        bilirubina: { type: Number, default: null },
+        bilirubinaTotal: { type: Number, default: null },
+        bilirubinaDirecta: { type: Number, default: null },
+        bilirubinaIndirecta: { type: Number, default: null },
+        nitrogenoUreico: { type: Number, default: null },
+        creatinina: { type: Number, default: null },
+        hierroTotal: { type: Number, default: null },
         observations: { type: String, default: '' },
         recordedAt: { type: String, default: '' },
       }],

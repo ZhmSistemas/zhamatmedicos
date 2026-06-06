@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import dbConnect from '@/lib/dbConnect'
 import dbConnectLocal from '@/lib/dbConnectLocal'
+import ReferenceModel, { ReferenceStandards } from '@/lib/models/ReferenceModel'
 import { getProductModel } from '@/lib/models/ProductLocalModel'
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
@@ -28,6 +30,13 @@ export async function POST(request: NextRequest) {
         platelets: patientData?.hemogram?.platelets ?? null,
         hemoglobin: patientData?.hemogram?.hemoglobin ?? null,
         hematocrit: patientData?.hemogram?.hematocrit ?? null,
+        volumenCorpuscularMedio: patientData?.hemogram?.volumenCorpuscularMedio ?? null,
+        bilirubinaTotal: patientData?.hemogram?.bilirubinaTotal ?? null,
+        bilirubinaDirecta: patientData?.hemogram?.bilirubinaDirecta ?? null,
+        bilirubinaIndirecta: patientData?.hemogram?.bilirubinaIndirecta ?? null,
+        nitrogenoUreico: patientData?.hemogram?.nitrogenoUreico ?? null,
+        creatinina: patientData?.hemogram?.creatinina ?? null,
+        hierroTotal: patientData?.hemogram?.hierroTotal ?? null,
         observations: patientData?.hemogram?.observations ?? '',
       },
       bloodPressure: {
@@ -41,6 +50,22 @@ export async function POST(request: NextRequest) {
       consumedProducts: patientData?.consumedProducts ?? [],
       consumedProductsHistory: patientData?.consumedProductsHistory ?? [],
     }
+
+    await dbConnect()
+    let reference = (await ReferenceModel.findOne({ name: 'default' }).lean()) as ReferenceStandards | null
+    if (!reference) {
+      reference = (await ReferenceModel.create({ name: 'default' })) as ReferenceStandards
+    }
+
+    const referenceContext = `
+Referencias de laboratorio actuales:
+- Tensión arterial:
+${Object.entries(reference.bloodPressure).map(([key, value]) => `  * ${value.label}: sistólica ${value.systolic[0]}-${value.systolic[1]} mmHg, diastólica ${value.diastolic[0]}-${value.diastolic[1]} mmHg`).join('\n')}
+- Glucosa en sangre:
+${Object.entries(reference.bloodSugar).map(([key, value]) => `  * ${value.label}: ${value.min}-${value.max} mg/dL (${value.type})`).join('\n')}
+- Hemograma:
+${Object.entries(reference.hemogram).map(([key, value]) => `  * ${value.label}: ${value.min}-${value.max} ${value.unit}`).join('\n')}
+`
 
     // Construir el contexto médico con los datos del paciente
     const medicalContext = `
@@ -61,8 +86,17 @@ Datos del Paciente:
   * Plaquetas: ${patient.hemogram.platelets}
   * Hemoglobina: ${patient.hemogram.hemoglobin} g/dL
   * Hematocrito: ${patient.hemogram.hematocrit} %
+  * VCM: ${patient.hemogram.volumenCorpuscularMedio} fL
+  * Bilirrubina Total: ${patient.hemogram.bilirubinaTotal} mg/dL
+  * Bilirrubina Directa: ${patient.hemogram.bilirubinaDirecta} mg/dL
+  * Bilirrubina Indirecta: ${patient.hemogram.bilirubinaIndirecta} mg/dL
+  * Nitrógeno ureico: ${patient.hemogram.nitrogenoUreico} mg/dL
+  * Creatinina: ${patient.hemogram.creatinina} mg/dL
+  * Hierro Total: ${patient.hemogram.hierroTotal} µg/dL
   * Observaciones: ${patient.hemogram.observations}
 - Observaciones generales: ${patient.observations}
+- RANGOS DE REFERENCIA:
+${referenceContext}
 - Productos consumidos recientemente: ${patient.consumedProducts?.length ? patient.consumedProducts.map((p: { productName: string; quantity: number; pricecompra: number }) => `${p.productName} (cant: ${p.quantity}, precio: $${p.pricecompra})`).join(', ') : 'Ninguno'}
 - Historial completo de productos consumidos: ${patient.consumedProductsHistory?.length ? patient.consumedProductsHistory.map((p: { productName: string; quantity: number; pricecompra: number; recordedAt: string }) => `${p.productName} x${p.quantity} - $${p.pricecompra} c/u (${new Date(p.recordedAt).toLocaleDateString()})`).join('; ') : 'Ninguno'}
     `
