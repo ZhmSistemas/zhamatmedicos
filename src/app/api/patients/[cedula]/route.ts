@@ -4,7 +4,7 @@ import dbConnect from '@/lib/dbConnect'
 import PatientModel from '@/lib/models/PatientModel'
 
 const addMeasurementSchema = z.object({
-  type: z.enum(['bloodPressure', 'bloodSugar', 'hemogram', 'weight', 'allergies', 'diseases', 'medications']).optional(),
+  type: z.enum(['bloodPressure', 'bloodSugar', 'hemogram', 'weight', 'allergies', 'diseases', 'medications', 'observations']).optional(),
   bloodPressure: z.object({
     systolic: z.number().nullable(),
     diastolic: z.number().nullable(),
@@ -27,6 +27,16 @@ const addMeasurementSchema = z.object({
     nitrogenoUreico: z.number().nullable(),
     creatinina: z.number().nullable(),
     hierroTotal: z.number().nullable(),
+    colesterolTotal: z.number().nullable(),
+    colesterolHDL: z.number().nullable(),
+    colesterolLDL: z.number().nullable(),
+    trigliceridos: z.number().nullable(),
+    transaminasaOxalacetica: z.number().nullable(),
+    transaminasaPirubica: z.number().nullable(),
+    deshidrogenasaLactica: z.number().nullable(),
+    hemoglobinaGlicosiladaAutomatizada: z.number().nullable(),
+    ferritina: z.number().nullable(),
+    recordedAt: z.string().optional(),
     observations: z.string().optional(),
   }).optional(),
   allergies: z.array(z.string()).optional(),
@@ -37,7 +47,11 @@ const addMeasurementSchema = z.object({
   phone: z.string().optional(),
   birthDate: z.string().optional(),
   weight: z.number().nullable().optional(),
+  weightRecordedAt: z.string().optional(),
   height: z.number().nullable().optional(),
+  observations: z.string().optional(),
+  observationsRecordedAt: z.string().optional(),
+  observationsExpirationDate: z.string().optional(),
   consumedProducts: z.array(z.object({
     productId: z.string(),
     productName: z.string(),
@@ -144,7 +158,7 @@ export const PUT = async (
           $push: {
             weightHistory: {
               value: data.weight,
-              recordedAt: now,
+              recordedAt: data.weightRecordedAt || now,
             }
           },
           $set: {
@@ -166,7 +180,7 @@ export const PUT = async (
       const updateOps: Record<string, unknown> = { $set: updateFields }
       if (data.weight !== undefined) {
         updateOps.$push = {
-          weightHistory: { value: data.weight, recordedAt: now }
+          weightHistory: { value: data.weight, recordedAt: data.weightRecordedAt || now }
         }
       }
       
@@ -225,13 +239,13 @@ export const PUT = async (
             bloodPressureHistory: {
               systolic: data.bloodPressure.systolic,
               diastolic: data.bloodPressure.diastolic,
-              recordedAt: now,
+              recordedAt: data.bloodPressure?.measuredAt || now,
             }
           },
           $set: {
             'bloodPressure.systolic': data.bloodPressure.systolic,
             'bloodPressure.diastolic': data.bloodPressure.diastolic,
-            'bloodPressure.measuredAt': now,
+            'bloodPressure.measuredAt': data.bloodPressure?.measuredAt || now,
           }
         },
         { new: true }
@@ -246,13 +260,13 @@ export const PUT = async (
             bloodSugarHistory: {
               value: data.bloodSugar.value,
               type: data.bloodSugar.type,
-              recordedAt: now,
+              recordedAt: data.bloodSugar?.measuredAt || now,
             }
           },
           $set: {
             'bloodSugar.value': data.bloodSugar.value,
             'bloodSugar.type': data.bloodSugar.type,
-            'bloodSugar.measuredAt': now,
+            'bloodSugar.measuredAt': data.bloodSugar?.measuredAt || now,
           }
         },
         { new: true }
@@ -277,8 +291,17 @@ export const PUT = async (
               nitrogenoUreico: data.hemogram.nitrogenoUreico,
               creatinina: data.hemogram.creatinina,
               hierroTotal: data.hemogram.hierroTotal,
+              colesterolTotal: data.hemogram.colesterolTotal,
+              colesterolHDL: data.hemogram.colesterolHDL,
+              colesterolLDL: data.hemogram.colesterolLDL,
+              trigliceridos: data.hemogram.trigliceridos,
+              transaminasaOxalacetica: data.hemogram.transaminasaOxalacetica,
+              transaminasaPirubica: data.hemogram.transaminasaPirubica,
+              deshidrogenasaLactica: data.hemogram.deshidrogenasaLactica,
+              hemoglobinaGlicosiladaAutomatizada: data.hemogram.hemoglobinaGlicosiladaAutomatizada,
+              ferritina: data.hemogram.ferritina,
               observations: data.hemogram.observations || '',
-              recordedAt: now,
+              recordedAt: data.hemogram?.recordedAt || now,
             }
           },
           $set: {
@@ -295,7 +318,34 @@ export const PUT = async (
             'hemogram.nitrogenoUreico': data.hemogram.nitrogenoUreico,
             'hemogram.creatinina': data.hemogram.creatinina,
             'hemogram.hierroTotal': data.hemogram.hierroTotal,
+            'hemogram.colesterolTotal': data.hemogram.colesterolTotal,
+            'hemogram.colesterolHDL': data.hemogram.colesterolHDL,
+            'hemogram.colesterolLDL': data.hemogram.colesterolLDL,
+            'hemogram.trigliceridos': data.hemogram.trigliceridos,
+            'hemogram.transaminasaOxalacetica': data.hemogram.transaminasaOxalacetica,
+            'hemogram.transaminasaPirubica': data.hemogram.transaminasaPirubica,
+            'hemogram.deshidrogenasaLactica': data.hemogram.deshidrogenasaLactica,
+            'hemogram.hemoglobinaGlicosiladaAutomatizada': data.hemogram.hemoglobinaGlicosiladaAutomatizada,
+            'hemogram.ferritina': data.hemogram.ferritina,
             'hemogram.observations': data.hemogram.observations || '',
+          }
+        },
+        { new: true }
+      )
+    } else if (data.type === 'observations' && data.observations) {
+      console.log('Adding observations:', data.observations)
+      updatedPatient = await PatientModel.findOneAndUpdate(
+        { cedula },
+        {
+          $push: {
+            observationsHistory: {
+              text: data.observations,
+              recordedAt: data.observationsRecordedAt || now,
+              expirationDate: data.observationsExpirationDate || '',
+            }
+          },
+          $set: {
+            observations: data.observations,
           }
         },
         { new: true }

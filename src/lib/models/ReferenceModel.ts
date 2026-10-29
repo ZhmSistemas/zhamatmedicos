@@ -56,6 +56,15 @@ export const DEFAULT_REFERENCE_STANDARDS: Omit<ReferenceStandards, 'name'> = {
     nitrogenoUreico: { min: 7, max: 20, unit: 'mg/dL', label: 'Nitrógeno Ureico', icon: '🧪' },
     creatinina: { min: 0.6, max: 1.3, unit: 'mg/dL', label: 'Creatinina', icon: '🧬' },
     hierroTotal: { min: 60, max: 170, unit: 'µg/dL', label: 'Hierro Total', icon: '⚙️' },
+    colesterolTotal: { min: 0, max: 200, unit: 'mg/dL', label: 'Colesterol Total', icon: '❤️' },
+    colesterolHDL: { min: 40, max: 300, unit: 'mg/dL', label: 'Colesterol HDL (Bueno)', icon: '✅' },
+    colesterolLDL: { min: 0, max: 100, unit: 'mg/dL', label: 'Colesterol LDL (Malo)', icon: '⚠️' },
+    trigliceridos: { min: 0, max: 150, unit: 'mg/dL', label: 'Triglicéridos', icon: '📊' },
+    transaminasaOxalacetica: { min: 0, max: 40, unit: 'U/L', label: 'TGO / AST', icon: '🔬' },
+    transaminasaPirubica: { min: 0, max: 40, unit: 'U/L', label: 'TGP / ALT', icon: '🔬' },
+    deshidrogenasaLactica: { min: 0, max: 400, unit: 'U/L', label: 'Deshidrogenasa Láctica (LDH)', icon: '⚗️' },
+    hemoglobinaGlicosiladaAutomatizada: { min: 0, max: 5.7, unit: '%', label: 'Hemoglobina Glicosilada', icon: '🩸' },
+    ferritina: { min: 30, max: 300, unit: 'ng/mL', label: 'Ferritina', icon: '💉' },
   },
 }
 

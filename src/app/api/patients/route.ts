@@ -13,6 +13,7 @@ const patientSchema = z.object({
   gender: z.string().optional(),
   address: z.string().optional(),
   weight: z.number().optional().nullable(),
+  weightRecordedAt: z.string().optional(),
   height: z.number().optional().nullable(),
   diseases: z.array(z.string()).optional().default([]),
   allergies: z.array(z.string()).optional().default([]),
@@ -31,6 +32,16 @@ const patientSchema = z.object({
     nitrogenoUreico: z.number().optional().nullable(),
     creatinina: z.number().optional().nullable(),
     hierroTotal: z.number().optional().nullable(),
+    colesterolTotal: z.number().optional().nullable(),
+    colesterolHDL: z.number().optional().nullable(),
+    colesterolLDL: z.number().optional().nullable(),
+    trigliceridos: z.number().optional().nullable(),
+    transaminasaOxalacetica: z.number().optional().nullable(),
+    transaminasaPirubica: z.number().optional().nullable(),
+    deshidrogenasaLactica: z.number().optional().nullable(),
+    hemoglobinaGlicosiladaAutomatizada: z.number().optional().nullable(),
+    ferritina: z.number().optional().nullable(),
+    recordedAt: z.string().optional(),
     observations: z.string().optional().default(''),
   }).optional(),
   bloodPressure: z.object({
@@ -44,6 +55,12 @@ const patientSchema = z.object({
     measuredAt: z.string().optional().default(''),
   }).optional(),
   observations: z.string().optional().default(''),
+  observationsRecordedAt: z.string().optional(),
+  observationsHistory: z.array(z.object({
+    text: z.string(),
+    recordedAt: z.string(),
+    expirationDate: z.string().optional().default(''),
+  })).optional(),
 })
 
 export const POST = async (request: NextRequest) => {
@@ -64,7 +81,7 @@ export const POST = async (request: NextRequest) => {
     const now = new Date().toISOString()
     const patientData: Record<string, unknown> = {
       ...data,
-      weightHistory: data.weight != null ? [{ value: data.weight, recordedAt: now }] : [],
+      weightHistory: data.weight != null ? [{ value: data.weight, recordedAt: data.weightRecordedAt || now }] : [],
     }
     if (data.hemogram && (
       data.hemogram.redBloodCells != null ||
@@ -79,25 +96,43 @@ export const POST = async (request: NextRequest) => {
       data.hemogram.bilirubinaIndirecta != null ||
       data.hemogram.nitrogenoUreico != null ||
       data.hemogram.creatinina != null ||
-      data.hemogram.hierroTotal != null
+      data.hemogram.hierroTotal != null ||
+      data.hemogram.colesterolTotal != null ||
+      data.hemogram.colesterolHDL != null ||
+      data.hemogram.colesterolLDL != null ||
+      data.hemogram.trigliceridos != null ||
+      data.hemogram.transaminasaOxalacetica != null ||
+      data.hemogram.transaminasaPirubica != null ||
+      data.hemogram.deshidrogenasaLactica != null ||
+      data.hemogram.hemoglobinaGlicosiladaAutomatizada != null ||
+      data.hemogram.ferritina != null
     )) {
       patientData.hemogramHistory = [{
         ...data.hemogram,
-        recordedAt: now,
+        recordedAt: data.hemogram?.recordedAt || now,
       }]
     }
     if (data.bloodPressure && (data.bloodPressure.systolic != null || data.bloodPressure.diastolic != null)) {
       patientData.bloodPressureHistory = [{
         systolic: data.bloodPressure.systolic,
         diastolic: data.bloodPressure.diastolic,
-        recordedAt: now,
+        recordedAt: data.bloodPressure.measuredAt || now,
       }]
     }
     if (data.bloodSugar && data.bloodSugar.value != null) {
       patientData.bloodSugarHistory = [{
         value: data.bloodSugar.value,
         type: data.bloodSugar.type || '',
-        recordedAt: now,
+        recordedAt: data.bloodSugar.measuredAt || now,
+      }]
+    }
+    if (data.observationsHistory && data.observationsHistory.length > 0) {
+      patientData.observationsHistory = data.observationsHistory
+    } else if (data.observations && data.observations.trim()) {
+      patientData.observationsHistory = [{
+        text: data.observations,
+        recordedAt: data.observationsRecordedAt || now,
+        expirationDate: '',
       }]
     }
     const newPatient = new PatientModel(patientData)

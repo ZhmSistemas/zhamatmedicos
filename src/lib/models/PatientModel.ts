@@ -29,6 +29,15 @@ export type Patient = {
     nitrogenoUreico: number | null
     creatinina: number | null
     hierroTotal: number | null
+    colesterolTotal: number | null
+    colesterolHDL: number | null
+    colesterolLDL: number | null
+    trigliceridos: number | null
+    transaminasaOxalacetica: number | null
+    transaminasaPirubica: number | null
+    deshidrogenasaLactica: number | null
+    hemoglobinaGlicosiladaAutomatizada: number | null
+    ferritina: number | null
     observations: string
   }
   bloodPressure: {
@@ -42,6 +51,12 @@ export type Patient = {
     measuredAt: string
   }
   observations: string
+  observationsHistory: Array<{
+    _id: string
+    text: string
+    recordedAt: string
+    expirationDate: string
+  }>
   hemogramHistory: Array<{
     _id: string
     redBloodCells: number | null
@@ -57,6 +72,15 @@ export type Patient = {
     nitrogenoUreico: number | null
     creatinina: number | null
     hierroTotal: number | null
+    colesterolTotal: number | null
+    colesterolHDL: number | null
+    colesterolLDL: number | null
+    trigliceridos: number | null
+    transaminasaOxalacetica: number | null
+    transaminasaPirubica: number | null
+    deshidrogenasaLactica: number | null
+    hemoglobinaGlicosiladaAutomatizada: number | null
+    ferritina: number | null
     observations: string
     recordedAt: string
   }>
@@ -123,6 +147,15 @@ const PatientSchema = new mongoose.Schema(
       nitrogenoUreico: { type: Number, default: null },
       creatinina: { type: Number, default: null },
       hierroTotal: { type: Number, default: null },
+      colesterolTotal: { type: Number, default: null },
+      colesterolHDL: { type: Number, default: null },
+      colesterolLDL: { type: Number, default: null },
+      trigliceridos: { type: Number, default: null },
+      transaminasaOxalacetica: { type: Number, default: null },
+      transaminasaPirubica: { type: Number, default: null },
+      deshidrogenasaLactica: { type: Number, default: null },
+      hemoglobinaGlicosiladaAutomatizada: { type: Number, default: null },
+      ferritina: { type: Number, default: null },
       observations: { type: String, default: '' },
     },
     bloodPressure: {
@@ -136,6 +169,14 @@ const PatientSchema = new mongoose.Schema(
       measuredAt: { type: String, default: '' },
     },
     observations: { type: String, default: '' },
+    observationsHistory: {
+      type: [{
+        text: { type: String, default: '' },
+        recordedAt: { type: String, default: '' },
+        expirationDate: { type: String, default: '' },
+      }],
+      default: [],
+    },
     hemogramHistory: {
       type: [{
         redBloodCells: { type: Number, default: null },
@@ -151,6 +192,15 @@ const PatientSchema = new mongoose.Schema(
         nitrogenoUreico: { type: Number, default: null },
         creatinina: { type: Number, default: null },
         hierroTotal: { type: Number, default: null },
+        colesterolTotal: { type: Number, default: null },
+        colesterolHDL: { type: Number, default: null },
+        colesterolLDL: { type: Number, default: null },
+        trigliceridos: { type: Number, default: null },
+        transaminasaOxalacetica: { type: Number, default: null },
+        transaminasaPirubica: { type: Number, default: null },
+        deshidrogenasaLactica: { type: Number, default: null },
+        hemoglobinaGlicosiladaAutomatizada: { type: Number, default: null },
+        ferritina: { type: Number, default: null },
         observations: { type: String, default: '' },
         recordedAt: { type: String, default: '' },
       }],

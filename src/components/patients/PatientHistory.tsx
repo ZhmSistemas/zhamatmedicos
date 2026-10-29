@@ -16,15 +16,21 @@ const searchSchema = z.object({
 type SearchInputs = z.infer<typeof searchSchema>
 
 const measurementSchema = z.object({
-  type: z.enum(['bloodPressure', 'bloodSugar', 'hemogram', 'weight']),
+  type: z.enum(['bloodPressure', 'bloodSugar', 'hemogram', 'weight', 'observations']),
   weight: z.string().optional(),
+  weightRecordedAt: z.string().optional(),
+  observations: z.string().optional(),
+  observationsRecordedAt: z.string().optional(),
+  observationsExpirationDate: z.string().optional(),
   bloodPressure: z.object({
     systolic: z.string().optional(),
     diastolic: z.string().optional(),
+    measuredAt: z.string().optional(),
   }).optional(),
   bloodSugar: z.object({
     value: z.string().optional(),
     type: z.string().optional(),
+    measuredAt: z.string().optional(),
   }).optional(),
   hemogram: z.object({
     redBloodCells: z.string().optional(),
@@ -40,6 +46,16 @@ const measurementSchema = z.object({
     nitrogenoUreico: z.string().optional(),
     creatinina: z.string().optional(),
     hierroTotal: z.string().optional(),
+    colesterolTotal: z.string().optional(),
+    colesterolHDL: z.string().optional(),
+    colesterolLDL: z.string().optional(),
+    trigliceridos: z.string().optional(),
+    transaminasaOxalacetica: z.string().optional(),
+    transaminasaPirubica: z.string().optional(),
+    deshidrogenasaLactica: z.string().optional(),
+    hemoglobinaGlicosiladaAutomatizada: z.string().optional(),
+    ferritina: z.string().optional(),
+    recordedAt: z.string().optional(),
     observations: z.string().optional(),
   }).optional(),
 })
@@ -75,8 +91,21 @@ interface HemogramRecord {
   hematocrit: number | null
   volumenCorpuscularMedio: number | null
   bilirubina: number | null
+  colesterolTotal: number | null
+  colesterolHDL: number | null
+  colesterolLDL: number | null
+  trigliceridos: number | null
+  transaminasaOxalacetica: number | null
+  transaminasaPirubica: number | null
   observations: string
   recordedAt: string
+}
+
+interface ObservationRecord {
+  _id: string
+  text: string
+  recordedAt: string
+  expirationDate: string
 }
 
 interface Patient {
@@ -108,6 +137,15 @@ interface Patient {
     nitrogenoUreico: number | null
     creatinina: number | null
     hierroTotal: number | null
+    colesterolTotal: number | null
+    colesterolHDL: number | null
+    colesterolLDL: number | null
+    trigliceridos: number | null
+    transaminasaOxalacetica: number | null
+    transaminasaPirubica: number | null
+    deshidrogenasaLactica: number | null
+    hemoglobinaGlicosiladaAutomatizada: number | null
+    ferritina: number | null
     observations: string
   }
   bloodPressure: {
@@ -122,6 +160,7 @@ interface Patient {
   }
   observations: string
   hemogramHistory: HemogramRecord[]
+  observationsHistory: ObservationRecord[]
   bloodPressureHistory: BloodPressureRecord[]
   bloodSugarHistory: BloodSugarRecord[]
   weightHistory: WeightRecord[]
@@ -144,13 +183,14 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
   const [patient, setPatient] = useState<Patient | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
-  const [measurementType, setMeasurementType] = useState<'bloodPressure' | 'bloodSugar' | 'hemogram' | 'weight'>('bloodPressure')
+  const [measurementType, setMeasurementType] = useState<'bloodPressure' | 'bloodSugar' | 'hemogram' | 'weight' | 'observations'>('bloodPressure')
   const [isAdding, setIsAdding] = useState(false)
   const [addSuccess, setAddSuccess] = useState(false)
   const [expandedBpHistory, setExpandedBpHistory] = useState(false)
   const [expandedBsHistory, setExpandedBsHistory] = useState(false)
   const [expandedHgHistory, setExpandedHgHistory] = useState(false)
   const [expandedWeightHistory, setExpandedWeightHistory] = useState(false)
+  const [expandedObservationsHistory, setExpandedObservationsHistory] = useState(false)
   const [showEditInfoModal, setShowEditInfoModal] = useState(false)
   const [editInfoType, setEditInfoType] = useState<'allergies' | 'diseases' | 'medications'>('allergies')
   const [editInfoInput, setEditInfoInput] = useState('')
@@ -238,6 +278,15 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
         nitrogenoUreico: '',
         creatinina: '',
         hierroTotal: '',
+        colesterolTotal: '',
+        colesterolHDL: '',
+        colesterolLDL: '',
+        trigliceridos: '',
+        transaminasaOxalacetica: '',
+        transaminasaPirubica: '',
+        deshidrogenasaLactica: '',
+        hemoglobinaGlicosiladaAutomatizada: '',
+        ferritina: '',
         observations: '',
       },
     },
@@ -309,15 +358,18 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
 
       if (measurementType === 'weight') {
         payload.weight = data.weight ? parseFloat(data.weight) : null
+        payload.weightRecordedAt = data.weightRecordedAt || new Date().toISOString()
       } else if (measurementType === 'bloodPressure' && data.bloodPressure) {
         payload.bloodPressure = {
           systolic: parseFloat(data.bloodPressure.systolic || '0'),
           diastolic: parseFloat(data.bloodPressure.diastolic || '0'),
+          measuredAt: data.bloodPressure.measuredAt || new Date().toISOString(),
         }
       } else if (measurementType === 'bloodSugar' && data.bloodSugar) {
         payload.bloodSugar = {
           value: parseFloat(data.bloodSugar.value || '0'),
           type: data.bloodSugar.type || 'ayunas',
+          measuredAt: data.bloodSugar.measuredAt || new Date().toISOString(),
         }
       } else if (measurementType === 'hemogram' && data.hemogram) {
         payload.hemogram = {
@@ -326,16 +378,30 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
           platelets: data.hemogram.platelets ? parseFloat(data.hemogram.platelets) : null,
           hemoglobin: data.hemogram.hemoglobin ? parseFloat(data.hemogram.hemoglobin) : null,
           hematocrit: data.hemogram.hematocrit ? parseFloat(data.hemogram.hematocrit) : null,
-          bilirubina: data.hemogram.bilirubina ? parseFloat(data.hemogram.bilirubina) : null,
           volumenCorpuscularMedio: data.hemogram.volumenCorpuscularMedio ? parseFloat(data.hemogram.volumenCorpuscularMedio) : null,
+          bilirubina: data.hemogram.bilirubina ? parseFloat(data.hemogram.bilirubina) : null,
           bilirubinaTotal: data.hemogram.bilirubinaTotal ? parseFloat(data.hemogram.bilirubinaTotal) : null,
           bilirubinaDirecta: data.hemogram.bilirubinaDirecta ? parseFloat(data.hemogram.bilirubinaDirecta) : null,
           bilirubinaIndirecta: data.hemogram.bilirubinaIndirecta ? parseFloat(data.hemogram.bilirubinaIndirecta) : null,
           nitrogenoUreico: data.hemogram.nitrogenoUreico ? parseFloat(data.hemogram.nitrogenoUreico) : null,
           creatinina: data.hemogram.creatinina ? parseFloat(data.hemogram.creatinina) : null,
           hierroTotal: data.hemogram.hierroTotal ? parseFloat(data.hemogram.hierroTotal) : null,
+          colesterolTotal: data.hemogram.colesterolTotal ? parseFloat(data.hemogram.colesterolTotal) : null,
+          colesterolHDL: data.hemogram.colesterolHDL ? parseFloat(data.hemogram.colesterolHDL) : null,
+          colesterolLDL: data.hemogram.colesterolLDL ? parseFloat(data.hemogram.colesterolLDL) : null,
+          trigliceridos: data.hemogram.trigliceridos ? parseFloat(data.hemogram.trigliceridos) : null,
+          transaminasaOxalacetica: data.hemogram.transaminasaOxalacetica ? parseFloat(data.hemogram.transaminasaOxalacetica) : null,
+          transaminasaPirubica: data.hemogram.transaminasaPirubica ? parseFloat(data.hemogram.transaminasaPirubica) : null,
+          deshidrogenasaLactica: data.hemogram.deshidrogenasaLactica ? parseFloat(data.hemogram.deshidrogenasaLactica) : null,
+          hemoglobinaGlicosiladaAutomatizada: data.hemogram.hemoglobinaGlicosiladaAutomatizada ? parseFloat(data.hemogram.hemoglobinaGlicosiladaAutomatizada) : null,
+          ferritina: data.hemogram.ferritina ? parseFloat(data.hemogram.ferritina) : null,
+          recordedAt: data.hemogram.recordedAt || new Date().toISOString(),
           observations: data.hemogram.observations || '',
         }
+      } else if (measurementType === 'observations') {
+        payload.observations = data.observations || ''
+        payload.observationsRecordedAt = data.observationsRecordedAt || new Date().toISOString()
+        payload.observationsExpirationDate = data.observationsExpirationDate || ''
       }
 
       const response = await fetch(`/api/patients/${patient.cedula}`, {
@@ -858,7 +924,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                     <Droplets className="h-5 w-5 text-purple-500" />
-                    Hemograma
+                    Hemograma + LDH / HbA1c / Ferritina
                   </div>
                   <span className="text-xs text-gray-400">
                     {(patient.hemogramHistory?.length || 0)} registro{(patient.hemogramHistory?.length || 0) !== 1 ? 's' : ''}
@@ -871,6 +937,15 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                   <p className="text-sm text-gray-500">Hemoglobina (g/dL)</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Bilirrubina: {patient.hemogram.bilirubina ?? '--'} mg/dL
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    LDH: {patient.hemogram.deshidrogenasaLactica ?? '--'} U/L
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    HbA1c: {patient.hemogram.hemoglobinaGlicosiladaAutomatizada ?? '--'} %
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Ferritina: {patient.hemogram.ferritina ?? '--'} ng/mL
                   </p>
                 </div>
               </div>
@@ -920,6 +995,17 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
               >
                 <Plus className="h-4 w-4" />
                 Agregar Peso
+              </button>
+              <button
+                onClick={() => {
+                  setMeasurementType('observations')
+                  resetMeasurement()
+                  setShowAddModal(true)
+                }}
+                className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
+              >
+                <Plus className="h-4 w-4" />
+                Agregar Observaciones
               </button>
             </div>
 
@@ -1057,7 +1143,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
               >
                 <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                   <TrendingUp className="h-5 w-5 text-purple-500" />
-                  Historial de Hemogramas
+                  Historial de Hemograma y marcadores
                 </div>
                 {expandedHgHistory ? (
                   <ChevronUp className="h-5 w-5 text-gray-400" />
@@ -1081,6 +1167,9 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                             <ReferenceLine yAxisId="left" y={12} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'Hb normal mín', position: 'right', fontSize: 10 }} />
                             <ReferenceLine yAxisId="left" y={16} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'Hb normal máx', position: 'right', fontSize: 10 }} />
                             <Line yAxisId="left" type="monotone" dataKey="hemoglobin" stroke="#8b5cf6" name="Hemoglobina (g/dL)" strokeWidth={2} dot={{ r: 3 }} />
+                            <Line yAxisId="left" type="monotone" dataKey="hemoglobinaGlicosiladaAutomatizada" stroke="#22c55e" name="HbA1c (%)" strokeWidth={2} dot={{ r: 3 }} />
+                            <Line yAxisId="right" type="monotone" dataKey="deshidrogenasaLactica" stroke="#ec4899" name="LDH (U/L)" strokeWidth={2} dot={{ r: 3 }} />
+                            <Line yAxisId="right" type="monotone" dataKey="ferritina" stroke="#0ea5e9" name="Ferritina (ng/mL)" strokeWidth={2} dot={{ r: 3 }} />
                             <Line yAxisId="right" type="monotone" dataKey="whiteBloodCells" stroke="#f59e0b" name="Leucocitos (×10³)" strokeWidth={2} dot={{ r: 3 }} />
                           </LineChart>
                         </ResponsiveContainer>
@@ -1089,7 +1178,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                       {sortByDateDesc(patient.hemogramHistory).map((record) => (
                         <div key={record._id} className="mb-4 rounded-lg bg-gray-50 p-4">
                           <p className="mb-2 text-sm font-medium text-gray-500">{formatDateTime(record.recordedAt)}</p>
-                          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                          <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
                             <div className="text-center">
                               <p className="text-lg font-bold text-gray-900">{record.redBloodCells ?? '--'}</p>
                               <p className="text-xs text-gray-500">Glóbulos Rojos</p>
@@ -1109,6 +1198,18 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                             <div className="text-center">
                               <p className="text-lg font-bold text-gray-900">{record.hematocrit ?? '--'}</p>
                               <p className="text-xs text-gray-500">Hematocrito</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-gray-900">{record.deshidrogenasaLactica ?? '--'}</p>
+                              <p className="text-xs text-gray-500">LDH</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-gray-900">{record.hemoglobinaGlicosiladaAutomatizada ?? '--'}</p>
+                              <p className="text-xs text-gray-500">HbA1c</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-gray-900">{record.ferritina ?? '--'}</p>
+                              <p className="text-xs text-gray-500">Ferritina</p>
                             </div>
                           </div>
                           {record.observations && (
@@ -1169,6 +1270,52 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                     </>
                   ) : (
                     <p className="text-center text-gray-400">Sin registros de peso</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white p-6 shadow-lg">
+              <button
+                onClick={() => setExpandedObservationsHistory(!expandedObservationsHistory)}
+                className="mb-4 flex w-full items-center justify-between"
+              >
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  Historial de Observaciones
+                </div>
+                {expandedObservationsHistory ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
+              {expandedObservationsHistory && (
+                <div className="mt-4">
+                  {patient.observationsHistory && patient.observationsHistory.length > 0 ? (
+                    <div className="max-h-96 overflow-y-auto space-y-3">
+                      {sortByDateDesc(patient.observationsHistory).map((record) => {
+                        const isExpired = record.expirationDate && new Date(record.expirationDate) < new Date()
+                        return (
+                          <div key={record._id} className={`rounded-lg border-l-4 p-4 ${
+                            isExpired ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'
+                          }`}>
+                            <p className="text-sm text-gray-700">{record.text}</p>
+                            <div className="mt-2 flex gap-4 text-xs text-gray-500">
+                              <span>Registrada: {formatDateTime(record.recordedAt)}</span>
+                              {record.expirationDate && (
+                                <span className={isExpired ? 'font-semibold text-red-600' : ''}>
+                                  Vence: {formatDate(record.expirationDate)}
+                                  {isExpired && ' (Vencida)'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-400">Sin observaciones registradas</p>
                   )}
                 </div>
               )}
@@ -1446,7 +1593,7 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
             <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Agregar {measurementType === 'bloodPressure' ? 'Tensión Arterial' : measurementType === 'bloodSugar' ? 'Azúcar en Sangre' : measurementType === 'hemogram' ? 'Hemograma' : 'Peso'}
+                  Agregar {measurementType === 'bloodPressure' ? 'Tensión Arterial' : measurementType === 'bloodSugar' ? 'Azúcar en Sangre' : measurementType === 'hemogram' ? 'Hemograma' : measurementType === 'observations' ? 'Observaciones' : 'Peso'}
                 </h2>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -1466,81 +1613,111 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                 <input type="hidden" {...registerMeasurement('type')} value={measurementType} />
 
                 {measurementType === 'weight' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Peso (kg) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      {...registerMeasurement('weight')}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Peso (kg) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        {...registerMeasurement('weight')}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Peso</label>
+                      <input
+                        type="datetime-local"
+                        {...registerMeasurement('weightRecordedAt')}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
                   </div>
                 )}
 
                 {measurementType === 'bloodPressure' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Presión Sistólica (mmHg) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        {...registerMeasurement('bloodPressure.systolic')}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                      />
-                      {measurementErrors.bloodPressure?.systolic && (
-                        <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodPressure.systolic.message}</p>
-                      )}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Presión Sistólica (mmHg) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          {...registerMeasurement('bloodPressure.systolic')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                        {measurementErrors.bloodPressure?.systolic && (
+                          <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodPressure.systolic.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Presión Diastólica (mmHg) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          {...registerMeasurement('bloodPressure.diastolic')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                        {measurementErrors.bloodPressure?.diastolic && (
+                          <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodPressure.diastolic.message}</p>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Presión Diastólica (mmHg) <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Medición</label>
                       <input
-                        type="number"
-                        {...registerMeasurement('bloodPressure.diastolic')}
+                        type="datetime-local"
+                        {...registerMeasurement('bloodPressure.measuredAt')}
                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                       />
-                      {measurementErrors.bloodPressure?.diastolic && (
-                        <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodPressure.diastolic.message}</p>
-                      )}
                     </div>
                   </div>
                 )}
 
                 {measurementType === 'bloodSugar' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Nivel de Glucosa (mg/dL) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        {...registerMeasurement('bloodSugar.value')}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                      />
-                      {measurementErrors.bloodSugar?.value && (
-                        <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodSugar.value.message}</p>
-                      )}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Nivel de Glucosa (mg/dL) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          {...registerMeasurement('bloodSugar.value')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                        {measurementErrors.bloodSugar?.value && (
+                          <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodSugar.value.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Tipo de Medición <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          {...registerMeasurement('bloodSugar.type')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        >
+                          <option value="">Seleccionar</option>
+                          <option value="ayunas">En Ayunas</option>
+                          <option value="postprandial">Postprandial</option>
+                          <option value="aleatorio">Aleatorio</option>
+                        </select>
+                        {measurementErrors.bloodSugar?.type && (
+                          <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodSugar.type.message}</p>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tipo de Medición <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...registerMeasurement('bloodSugar.type')}
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Medición</label>
+                      <input
+                        type="datetime-local"
+                        {...registerMeasurement('bloodSugar.measuredAt')}
                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                      >
-                        <option value="">Seleccionar</option>
-                        <option value="ayunas">En Ayunas</option>
-                        <option value="postprandial">Postprandial</option>
-                        <option value="aleatorio">Aleatorio</option>
-                      </select>
-                      {measurementErrors.bloodSugar?.type && (
-                        <p className="mt-1 text-sm text-red-600">{measurementErrors.bloodSugar.type.message}</p>
-                      )}
+                      />
                     </div>
                   </div>
                 )}
@@ -1655,12 +1832,136 @@ export default function PatientHistory({ initialCedula, onBack }: PatientHistory
                           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Colesterol Total (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.colesterolTotal')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Colesterol HDL (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.colesterolHDL')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Colesterol LDL (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.colesterolLDL')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Triglicéridos (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.trigliceridos')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">TGO / AST (U/L)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.transaminasaOxalacetica')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">TGP / ALT (U/L)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.transaminasaPirubica')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Deshidrogenasa Láctica (LDH) (U/L)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.deshidrogenasaLactica')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Hemoglobina Glicosilada Automatizada (%)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.hemoglobinaGlicosiladaAutomatizada')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Ferritina (ng/mL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          {...registerMeasurement('hemogram.ferritina')}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Hemograma</label>
+                      <input
+                        type="datetime-local"
+                        {...registerMeasurement('hemogram.recordedAt')}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Observaciones</label>
                       <textarea
                         {...registerMeasurement('hemogram.observations')}
                         rows={2}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {measurementType === 'observations' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Observaciones <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        {...registerMeasurement('observations')}
+                        rows={4}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                        placeholder="Ingrese sus observaciones..."
+                      />
+                      {measurementErrors.observations && (
+                        <p className="mt-1 text-sm text-red-600">{measurementErrors.observations.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
+                      <input
+                        type="date"
+                        {...registerMeasurement('observationsExpirationDate')}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha de Observación</label>
+                      <input
+                        type="datetime-local"
+                        {...registerMeasurement('observationsRecordedAt')}
                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                       />
                     </div>

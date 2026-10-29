@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm, Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Trash2, User, Activity, Heart, Droplets } from 'lucide-react'
+import { Plus, Trash2, User, Activity, Heart, Droplets, AlertCircle } from 'lucide-react'
 
 interface PatientFormProps {
   onSuccess?: () => void
@@ -20,6 +20,7 @@ type PatientFormInputs = {
   gender?: string
   address?: string
   weight?: string
+  weightRecordedAt?: string
   height?: string
   diseases?: string[]
   allergies?: string[]
@@ -38,6 +39,15 @@ type PatientFormInputs = {
     nitrogenoUreico?: string
     creatinina?: string
     hierroTotal?: string
+    colesterolTotal?: string
+    colesterolHDL?: string
+    colesterolLDL?: string
+    trigliceridos?: string
+    transaminasaOxalacetica?: string
+    transaminasaPirubica?: string
+    deshidrogenasaLactica?: string
+    hemoglobinaGlicosiladaAutomatizada?: string
+    ferritina?: string
     observations?: string
   }
   bloodPressure?: {
@@ -51,6 +61,7 @@ type PatientFormInputs = {
     measuredAt?: string
   }
   observations?: string
+  observationsRecordedAt?: string
 }
 
 const patientSchema = z.object({
@@ -63,6 +74,7 @@ const patientSchema = z.object({
   gender: z.string().optional(),
   address: z.string().optional(),
   weight: z.string().optional(),
+  weightRecordedAt: z.string().optional(),
   height: z.string().optional(),
   diseases: z.array(z.string()).optional(),
   allergies: z.array(z.string()).optional(),
@@ -81,6 +93,16 @@ const patientSchema = z.object({
     nitrogenoUreico: z.string().optional(),
     creatinina: z.string().optional(),
     hierroTotal: z.string().optional(),
+    colesterolTotal: z.string().optional(),
+    colesterolHDL: z.string().optional(),
+    colesterolLDL: z.string().optional(),
+    trigliceridos: z.string().optional(),
+    transaminasaOxalacetica: z.string().optional(),
+    transaminasaPirubica: z.string().optional(),
+    deshidrogenasaLactica: z.string().optional(),
+    hemoglobinaGlicosiladaAutomatizada: z.string().optional(),
+    ferritina: z.string().optional(),
+    recordedAt: z.string().optional(),
     observations: z.string().optional(),
   }).optional(),
   bloodPressure: z.object({
@@ -94,6 +116,7 @@ const patientSchema = z.object({
     measuredAt: z.string().optional(),
   }).optional(),
   observations: z.string().optional(),
+  observationsRecordedAt: z.string().optional(),
 })
 
 export default function PatientForm({ onSuccess }: PatientFormProps) {
@@ -106,6 +129,9 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
   const [diseases, setDiseases] = useState<string[]>([])
   const [allergies, setAllergies] = useState<string[]>([])
   const [medications, setMedications] = useState<string[]>([])
+  const [observationText, setObservationText] = useState('')
+  const [observationExpiration, setObservationExpiration] = useState('')
+  const [observationEntries, setObservationEntries] = useState<Array<{ text: string; expirationDate: string }>>([])
 
   const {
     register,
@@ -124,6 +150,7 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
       gender: '',
       address: '',
       weight: '',
+      weightRecordedAt: '',
       height: '',
       diseases: [],
       allergies: [],
@@ -142,6 +169,16 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
         nitrogenoUreico: '',
         creatinina: '',
         hierroTotal: '',
+        colesterolTotal: '',
+        colesterolHDL: '',
+        colesterolLDL: '',
+        trigliceridos: '',
+        transaminasaOxalacetica: '',
+        transaminasaPirubica: '',
+        deshidrogenasaLactica: '',
+        hemoglobinaGlicosiladaAutomatizada: '',
+        ferritina: '',
+        recordedAt: '',
         observations: '',
       },
       bloodPressure: {
@@ -182,7 +219,8 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
     setServerSuccess(null)
 
     try {
-      const payload = {
+      const now = new Date().toISOString()
+      const payload: Record<string, unknown> = {
         ...data,
         diseases,
         allergies,
@@ -203,6 +241,15 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
           nitrogenoUreico: data.hemogram.nitrogenoUreico ? parseFloat(data.hemogram.nitrogenoUreico) : null,
           creatinina: data.hemogram.creatinina ? parseFloat(data.hemogram.creatinina) : null,
           hierroTotal: data.hemogram.hierroTotal ? parseFloat(data.hemogram.hierroTotal) : null,
+          colesterolTotal: data.hemogram.colesterolTotal ? parseFloat(data.hemogram.colesterolTotal) : null,
+          colesterolHDL: data.hemogram.colesterolHDL ? parseFloat(data.hemogram.colesterolHDL) : null,
+          colesterolLDL: data.hemogram.colesterolLDL ? parseFloat(data.hemogram.colesterolLDL) : null,
+          trigliceridos: data.hemogram.trigliceridos ? parseFloat(data.hemogram.trigliceridos) : null,
+          transaminasaOxalacetica: data.hemogram.transaminasaOxalacetica ? parseFloat(data.hemogram.transaminasaOxalacetica) : null,
+          transaminasaPirubica: data.hemogram.transaminasaPirubica ? parseFloat(data.hemogram.transaminasaPirubica) : null,
+          deshidrogenasaLactica: data.hemogram.deshidrogenasaLactica ? parseFloat(data.hemogram.deshidrogenasaLactica) : null,
+          hemoglobinaGlicosiladaAutomatizada: data.hemogram.hemoglobinaGlicosiladaAutomatizada ? parseFloat(data.hemogram.hemoglobinaGlicosiladaAutomatizada) : null,
+          ferritina: data.hemogram.ferritina ? parseFloat(data.hemogram.ferritina) : null,
           observations: data.hemogram.observations || '',
         } : {},
         bloodPressure: data.bloodPressure ? {
@@ -215,6 +262,15 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
           type: data.bloodSugar.type || '',
           measuredAt: data.bloodSugar.measuredAt || '',
         } : {},
+      }
+
+      if (observationEntries.length > 0) {
+        payload.observationsHistory = observationEntries.map(entry => ({
+          text: entry.text,
+          recordedAt: now,
+          expirationDate: entry.expirationDate || '',
+        }))
+        payload.observations = observationEntries.map(e => e.text).join('\n')
       }
 
       const response = await fetch('/api/patients', {
@@ -233,6 +289,9 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
       setDiseases([])
       setAllergies([])
       setMedications([])
+      setObservationEntries([])
+      setObservationText('')
+      setObservationExpiration('')
       
       if (onSuccess) {
         setTimeout(() => {
@@ -368,6 +427,15 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
                   type="number"
                   step="0.1"
                   {...register('weight')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Fecha de Peso</label>
+                <input
+                  type="datetime-local"
+                  {...register('weightRecordedAt')}
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                 />
               </div>
@@ -619,6 +687,95 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Colesterol Total (mg/dL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.colesterolTotal')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Colesterol HDL (mg/dL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.colesterolHDL')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Colesterol LDL (mg/dL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.colesterolLDL')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Triglicéridos (mg/dL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.trigliceridos')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">TGO / AST (U/L)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.transaminasaOxalacetica')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">TGP / ALT (U/L)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.transaminasaPirubica')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Deshidrogenasa Láctica (LDH) (U/L)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.deshidrogenasaLactica')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Hemoglobina Glicosilada Automatizada (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.hemoglobinaGlicosiladaAutomatizada')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ferritina (ng/mL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('hemogram.ferritina')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700">Fecha de Hemograma</label>
+                <input
+                  type="datetime-local"
+                  {...register('hemogram.recordedAt')}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
               <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700">Observaciones</label>
                 <textarea
@@ -700,14 +857,71 @@ export default function PatientForm({ onSuccess }: PatientFormProps) {
             </div>
           </section>
 
-          <div className="md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700">Observaciones Generales</label>
-            <textarea
-              {...register('observations')}
-              rows={3}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-            />
-          </div>
+          <section className="border-b border-gray-200 pb-6">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Observaciones con Vencimiento
+            </div>
+            <div className="mb-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Observación</label>
+                <textarea
+                  value={observationText}
+                  onChange={(e) => setObservationText(e.target.value)}
+                  rows={2}
+                  placeholder="Ingrese una observación..."
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
+                  <input
+                    type="date"
+                    value={observationExpiration}
+                    onChange={(e) => setObservationExpiration(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (observationText.trim()) {
+                      setObservationEntries(prev => [...prev, { text: observationText.trim(), expirationDate: observationExpiration }])
+                      setObservationText('')
+                      setObservationExpiration('')
+                    }
+                  }}
+                  className="rounded-md bg-orange-600 px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            {observationEntries.length > 0 && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {observationEntries.map((entry, index) => (
+                  <div key={index} className="flex items-center justify-between rounded-lg border-l-4 border-orange-500 bg-orange-50 p-3">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-700">{entry.text}</p>
+                      {entry.expirationDate && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Vence: {new Date(entry.expirationDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setObservationEntries(prev => prev.filter((_, i) => i !== index))}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           <div className="flex justify-end gap-4">
             <button
