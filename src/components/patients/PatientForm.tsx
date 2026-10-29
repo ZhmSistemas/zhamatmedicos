@@ -48,6 +48,7 @@ type PatientFormInputs = {
     deshidrogenasaLactica?: string
     hemoglobinaGlicosiladaAutomatizada?: string
     ferritina?: string
+    recordedAt?: string
     observations?: string
   }
   bloodPressure?: {

@@ -8,10 +8,12 @@ const addMeasurementSchema = z.object({
   bloodPressure: z.object({
     systolic: z.number().nullable(),
     diastolic: z.number().nullable(),
+    measuredAt: z.string().optional(),
   }).optional(),
   bloodSugar: z.object({
     value: z.number().nullable(),
     type: z.string(),
+    measuredAt: z.string().optional(),
   }).optional(),
   hemogram: z.object({
     redBloodCells: z.number().nullable(),

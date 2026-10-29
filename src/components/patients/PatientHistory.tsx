@@ -97,6 +97,9 @@ interface HemogramRecord {
   trigliceridos: number | null
   transaminasaOxalacetica: number | null
   transaminasaPirubica: number | null
+  deshidrogenasaLactica: number | null
+  hemoglobinaGlicosiladaAutomatizada: number | null
+  ferritina: number | null
   observations: string
   recordedAt: string
 }
